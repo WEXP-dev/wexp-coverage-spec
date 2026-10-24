@@ -125,7 +125,9 @@ def main():
                     run([sys.executable, "-m", "xml2rfc.run", str(ROOT / manifest["canonical_source"]),
                          "--" + kind, "--no-network", "--date", manifest["build"]["render_date"],
                          "--out", str(target)], report)
-                    require(identity(target) == manifest["files"][str(PAYLOAD / target.name)],
+                    rendered_identity = identity(target)
+                    report.setdefault("renderings", []).append({"name": target.name, **rendered_identity})
+                    require(rendered_identity == manifest["files"][str(PAYLOAD / target.name)],
                             "Re-render differs from selected artifact: " + target.name)
             report["rendered_files_match"] = 2
         if args.idnits:
