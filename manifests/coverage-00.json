@@ -1,0 +1,46 @@
+{
+  "format": "wexp-coverage-artifact-manifest/1",
+  "document": "draft-sergeev-wexp-coverage-00",
+  "title": "WEXP Coverage: Claims, Evidence, and Evaluation",
+  "status": "prepared-not-posted",
+  "intended_status": "Experimental",
+  "document_date": "2026-10-23",
+  "expires": "2027-04-26",
+  "canonical_source": "drafts/coverage/00/draft-sergeev-wexp-coverage-00.xml",
+  "submission_plan": {
+    "companion_document": "draft-sergeev-wexp-core-02",
+    "coordination": "simultaneous",
+    "prior_companion_posting_required": false
+  },
+  "build": {
+    "python": "3.12.14",
+    "xml2rfc": "3.34.1",
+    "render_date": "2026-10-23",
+    "network_during_render": false,
+    "requirements": "tools/requirements-build.txt",
+    "idnits": "3.3.0",
+    "node": "24.19.0"
+  },
+  "files": {
+    "drafts/coverage/00/draft-sergeev-wexp-coverage-00.html": {
+      "bytes": 295960,
+      "sha256": "41623b222c04e93d0099f1148ee9423c1d9261e78ff64030a45e034fcb907745"
+    },
+    "drafts/coverage/00/draft-sergeev-wexp-coverage-00.txt": {
+      "bytes": 195489,
+      "sha256": "ed0d1c328cf44a656925f4b8cd2ae4e757fe11c07402ed9c6756d7fa36657efe"
+    },
+    "drafts/coverage/00/draft-sergeev-wexp-coverage-00.xml": {
+      "bytes": 172866,
+      "sha256": "a2bc01d01527e1ca9e867c11341ff259b0788a941b3d1aef979f8937b82cfe62"
+    }
+  },
+  "limits": [
+    "Checks establish declared byte identity and bounded document structure.",
+    "This manifest does not establish IETF upload, posting, independent review, or deployment conformance."
+  ],
+  "repository": {
+    "id": 1431754080,
+    "full_name": "WEXP-dev/wexp-coverage-spec"
+  }
+}

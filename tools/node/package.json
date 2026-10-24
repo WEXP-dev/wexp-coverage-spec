@@ -1,0 +1,9 @@
+{
+  "name": "wexp-coverage-draft-tools",
+  "version": "1.0.0",
+  "private": true,
+  "license": "SEE LICENSE IN ../../LICENSE-CODE",
+  "dependencies": {
+    "@ietf-tools/idnits": "3.3.0"
+  }
+}

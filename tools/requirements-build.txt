@@ -1,0 +1,26 @@
+# Selected Coverage renderer/check environment: CPython 3.12.14.
+# Exact package versions; not a wheel-byte or complete OS lock.
+attrs==26.1.0
+certifi==2026.10.23
+charset-normalizer==3.5.2
+configargparse==1.8.0
+google-i18n-address==3.1.1
+idna==3.19
+intervaltree==3.2.1
+jinja2==3.1.6
+jsonschema==4.25.1
+jsonschema-specifications==2025.9.1
+lxml==6.1.1
+markupsafe==3.0.4
+natsort==8.4.0
+platformdirs==4.13.5
+pycountry==26.2.16
+pyyaml==6.0.3
+referencing==0.37.0
+requests==2.34.2
+rpds-py==2026.9.1
+sortedcontainers==2.4.0
+typing-extensions==4.16.0
+urllib3==2.8.0
+wcwidth==0.9.3
+xml2rfc==3.34.1

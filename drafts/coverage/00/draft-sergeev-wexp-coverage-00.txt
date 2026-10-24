@@ -1,0 +1,4200 @@
+
+
+
+
+Network Working Group                                    M. Sergeev, Ed.
+Internet-Draft                                    Independent Researcher
+Intended status: Experimental                            23 October 2026
+Expires: 26 April 2027
+
+
+            WEXP Coverage: Claims, Evidence, and Evaluation
+                     draft-sergeev-wexp-coverage-00
+
+Abstract
+
+   An authentic receipt for an action does not establish that every
+   action in a declared scope has a receipt.  This document specifies a
+   carrier-neutral contract for evaluating and reporting bounded claims
+   about action-record creation, delivery, source coverage, supplied-
+   record correspondence, and the absence of actions.  Results identify
+   the exact scope and cutoffs of each claim, its supporting evidence,
+   accepted assumptions, counterexamples, and unresolved conditions.
+   The document defines inference and reporting requirements,
+   requirements for deployment bindings, and a concrete deployment
+   profile.  Coverage results are separate from Witnessed Execution
+   Protocol (WEXP) Core appraisals and do not change their semantics.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on 26 April 2027.
+
+Copyright Notice
+
+   Copyright (c) 2026 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+   license-info) in effect on the date of publication of this document.
+
+
+
+Sergeev                   Expires 26 April 2027                 [Page 1]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.  Code Components
+   extracted from this document must include Revised BSD License text as
+   described in Section 4.e of the Trust Legal Provisions and are
+   provided without warranty as described in the Revised BSD License.
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   3
+     1.1.  Scope and Non-Goals . . . . . . . . . . . . . . . . . . .   3
+     1.2.  Architecture and Data Flow  . . . . . . . . . . . . . . .   4
+   2.  Conventions and Terminology . . . . . . . . . . . . . . . . .   5
+   3.  Exact Scope, Lifecycle, and Cutoffs . . . . . . . . . . . . .   6
+   4.  Populations, Views, and Binding Relations . . . . . . . . . .   7
+   5.  Claim Set . . . . . . . . . . . . . . . . . . . . . . . . . .   8
+   6.  Premises and Trust Policy . . . . . . . . . . . . . . . . . .   9
+     6.1.  Premise Records . . . . . . . . . . . . . . . . . . . . .   9
+     6.2.  View Closure Is Not Action Capture  . . . . . . . . . . .  10
+   7.  Evaluation Rules  . . . . . . . . . . . . . . . . . . . . . .  11
+     7.1.  Support Rules . . . . . . . . . . . . . . . . . . . . . .  11
+     7.2.  Refutation Rules and Minimal Counterexamples  . . . . . .  13
+     7.3.  Deterministic Reporting Procedure . . . . . . . . . . . .  15
+   8.  Logical Result Contract . . . . . . . . . . . . . . . . . . .  16
+   9.  Deployment Binding Requirements . . . . . . . . . . . . . . .  18
+   10. Illustrative Cases  . . . . . . . . . . . . . . . . . . . . .  19
+   11. PostgreSQL Sealed-Ledger Profile: Informative Overview  . . .  21
+     11.1.  Core Target Correspondence Example (Informative) . . . .  22
+     11.2.  Examples of Other Deployment Bindings (Informative)  . .  23
+   12. Related Work and Reuse  . . . . . . . . . . . . . . . . . . .  24
+   13. Relationship to WEXP Core and Joint Use . . . . . . . . . . .  24
+     13.1.  Joint-Use Contract . . . . . . . . . . . . . . . . . . .  25
+     13.2.  Separate Results and Application Decision  . . . . . . .  26
+     13.3.  Limits and Further Profiles  . . . . . . . . . . . . . .  27
+   14. Security Considerations . . . . . . . . . . . . . . . . . . .  28
+   15. Privacy Considerations  . . . . . . . . . . . . . . . . . . .  28
+   16. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  28
+   17. Implementation and Validation Status  . . . . . . . . . . . .  29
+   18. Normative References  . . . . . . . . . . . . . . . . . . . .  29
+   19. Informative References  . . . . . . . . . . . . . . . . . . .  31
+   Appendix A.  PostgreSQL Ledger Profile 0.2.0  . . . . . . . . . .  32
+     A.1.  Action Domain, Identity and Authority . . . . . . . . . .  32
+     A.2.  Pinned Epoch Policy . . . . . . . . . . . . . . . . . . .  34
+     A.3.  Admission, Three Committed Barriers and Durability  . . .  35
+     A.4.  Selected CBOR and COSE Carrier  . . . . . . . . . . . . .  36
+     A.5.  Final Receipt Payload and B . . . . . . . . . . . . . . .  38
+     A.6.  Finalization, Retries and Recipient Possession  . . . . .  39
+     A.7.  Complete Collection and Snapshot Encoding . . . . . . . .  40
+     A.8.  Explicit Deployment Assumptions . . . . . . . . . . . . .  42
+
+
+
+Sergeev                   Expires 26 April 2027                 [Page 2]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+     A.9.  PG-SealedSnapshot/0.2.0 Authentication Interchange  . . .  44
+     A.10. Timestamp Encoding  . . . . . . . . . . . . . . . . . . .  49
+     A.11. Input, Reports and Semantic Validation  . . . . . . . . .  50
+     A.12. Resource and Failure Contract . . . . . . . . . . . . . .  54
+     A.13. Conformance Cases and Their Preconditions . . . . . . . .  57
+     A.14. Complete Profile JSON Schemas . . . . . . . . . . . . . .  59
+       A.14.1.  Snapshot Schema  . . . . . . . . . . . . . . . . . .  59
+       A.14.2.  Evidence Package Manifest Schema . . . . . . . . . .  61
+       A.14.3.  Assumption Policy Schema . . . . . . . . . . . . . .  62
+       A.14.4.  Adapter Report Schema  . . . . . . . . . . . . . . .  63
+       A.14.5.  Coverage Result Schema . . . . . . . . . . . . . . .  65
+   Appendix B.  Reference Implementation (Informative) . . . . . . .  70
+     B.1.  Supported Evidence Path and Implementation Limits . . . .  71
+     B.2.  Recomputing Consumer Interface  . . . . . . . . . . . . .  71
+     B.3.  Native Reconciliation Comparison  . . . . . . . . . . . .  72
+   Appendix C.  Constructed Encoding Examples (Informative)  . . . .  72
+     C.1.  Signed Receipt Bytes  . . . . . . . . . . . . . . . . . .  72
+     C.2.  Complete Single-Claim Result Example  . . . . . . . . . .  73
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  75
+
+1.  Introduction
+
+   Evidence about a known action and evidence that all relevant actions
+   were recorded answer different questions.  A collection can contain
+   authentic, individually useful receipts while omitting an action
+   entirely.  Two matching collections can omit the same action.  A
+   signed terminal marker can authenticate a declared sequence without
+   establishing that every action entered that sequence.
+
+   This document makes those distinctions explicit in a portable logical
+   result.  It separately asks whether every action has a final receipt,
+   whether every final receipt has a real action binding, and whether
+   that relation is exactly one-to-one.  It also distinguishes delivery
+   of a creation cohort from exact equality with the recipient's
+   population.  A native implementation can implement these distinctions
+   without calling a WEXP Core appraiser.  The proposal composes
+   existing completeness, capture, and appraisal mechanisms; it does not
+   introduce a new cryptographic completeness primitive or claim
+   priority for these general distinctions.
+
+1.1.  Scope and Non-Goals
+
+   The proposed contract specifies claim meanings, scoped premises,
+   sufficient inference rules, counterexamples, result dependencies, and
+   reliance requirements.  It does not supply a universal source of
+   ground truth, guarantee truthful administrators, prescribe
+   instrumentation, or prove that a system is safe or correct.  Coverage
+   does not establish authorization, goal satisfaction, business
+
+
+
+Sergeev                   Expires 26 April 2027                 [Page 3]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   acceptance, durable external effect, or future retention.
+
+   The baseline uses finite populations and exact predicates, not loss
+   percentages.  Multiple distinct receipts for one action can satisfy
+   creation-complete and creation-sound while refuting creation-exact.
+   A positive one-to-one claim does not tolerate missing, extra,
+   ambiguous, or duplicate occurrences.  Sampling, allowed loss rates,
+   replacement receipts, and probabilistic coverage require separately
+   identified contracts.  No universal wire format, signature suite,
+   trust policy, or registry is defined in this revision.
+
+1.2.  Architecture and Data Flow
+
+   The architecture distinguishes four logical responsibilities.  These
+   responsibilities can be combined in one implementation; they do not
+   require separate services, processes, operators, or administrative
+   domains.
+
+   Carrier verification  Parse the selected record encoding, enforce its
+      extension rules, and authenticate the protected bytes under
+      supplied verification inputs.  A reusable carrier verifier can
+      leave the authenticated payload opaque.  Successful verification
+      does not by itself establish the authority of the signer,
+      population membership, complete capture, or the truth of a signed
+      assertion.
+
+   Deployment evidence interpretation  Apply the declared deployment
+      binding to interpret payloads, establish scoped identities and
+      membership, check action and source relations, and supply
+      normalized findings with evidence references.  Collection,
+      capture, closure, policy applicability, and any remaining
+      assumptions are addressed here rather than inferred from a
+      signature or a sender-provided boolean.
+
+   Coverage evaluation  Check premise dependencies, apply the rules in
+      Section 7, retain inherited assumptions and counterexamples,
+      aggregate conflicting derivations, and emit a CoverageResult.
+
+   Consumer reliance  Match the result to the consumer's required
+      claims, exact context, accepted authorities and assumptions before
+      relying on it.  The consumer's authority decision is separate from
+      the producer's proposed keys or policy.
+
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                 [Page 4]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   The generic contract does not select a carrier, signature suite, or
+   deployment technology.  A deployment profile specifies its supported
+   mechanisms and the information needed for authority decisions; it
+   does not select trusted parties or approve assumptions on behalf of a
+   consumer.  No signature or profile identifier substitutes for that
+   approval.  The PostgreSQL profile in Appendix A is one concrete
+   specialization, not a prerequisite for other bindings.
+
+   The same evidence can separately be mapped into a WEXP Core appraisal
+   for an exact action.  Neither result is substituted for the other.
+   In particular, an ordinary execution appraisal does not silently
+   acquire population completeness, and a positive coverage result does
+   not automatically establish the execution claim of every individual
+   receipt.
+
+2.  Conventions and Terminology
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in BCP
+   14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   capitals, as shown here.
+
+   Occurrence  One action instance under the declared lifecycle and
+      identity rules; not merely an equal payload, timestamp, request,
+      or identifier string.
+
+   Action receipt  The binding-defined final record about an action that
+      is counted in C or R.  A transparency receipt proving registration
+      of that record and an acknowledgement reporting delivery are
+      different object types.  Multiple transparency receipts for one
+      action receipt do not create multiple action receipts.
+
+   Deployment binding  A versioned contract instantiating the generic
+      Coverage semantics through record interpretation, identities,
+      predicates, capture mechanisms, closure evidence, policy handling,
+      and result encoding.  This use of binding denotes a deployment
+      contract; the mathematical binding relations B and F in Section 4
+      denote relations between occurrences.
+
+   Deployment profile  A named, versioned specification of a concrete
+      deployment binding, including its supported mechanisms and
+      limitations.  A profile constrains how evidence and authority
+      decisions are represented and checked; it does not establish that
+      its deployment assumptions hold or make those authority decisions
+      for a consumer.
+
+   Premise  A scoped predicate on which a derivation depends,
+
+
+
+Sergeev                   Expires 26 April 2027                 [Page 5]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+      accompanied by checked evidence or an explicitly authorized
+      assumption.
+
+   View  A supplied finite collection.  Its availability and integrity
+      are distinguishable from whether it enumerates an entire semantic
+      population.
+
+   Conditional support or refutation  A derivation valid under its
+      listed premises.  It is not an unconditional assertion that those
+      premises hold in the world.
+
+3.  Exact Scope, Lifecycle, and Cutoffs
+
+   A coverage context MUST identify the tenant or namespace, resource,
+   action kind, action-completion predicate, configuration epoch,
+   membership rule, occurrence-identity revision, compared payload
+   projection, receipt stream, intended recipient, and relevant policy
+   and evaluator revisions.  The action domain is denoted Omega.  The
+   result MUST bind to an immutable definition of this context, not just
+   a mutable human-readable label.
+
+   The action interval, receipt creation cutoff, and delivery cutoff
+   MUST be separate.  The baseline requires delivery cutoff not earlier
+   than creation cutoff.  It does not require immediate receipt
+   creation.  An event on an interval boundary is included or excluded
+   by an explicit rule.  Clock-based bindings MUST describe clock
+   sources and accepted uncertainty; logical coordinates MUST NOT be
+   represented as observed wall-clock time.
+
+   A request, authorization decision, invocation, successful database
+   commit, receipt creation, and receipt delivery are different
+   lifecycle events.  For a binding that defines an action as a
+   successful commit, rollback does not contribute an action; a lost
+   response after a commit does not remove that action.  A request retry
+   can reference an existing occurrence rather than create another.
+   These choices MUST be determined by the binding, not inferred from a
+   convenient count.
+
+   A binding MUST specify the moment at which a record becomes a final
+   action receipt, including the relation between signing, durable
+   storage, and external issuance.  Complete enumeration of a receipt
+   ledger does not enumerate receipts created outside that ledger.  A
+   binding that finalizes at durable insertion MUST prohibit prior
+   external issuance; it cannot retroactively exclude an already issued
+   receipt merely because the ledger lost it.
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                 [Page 6]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   An expected set M, such as scheduled assignments or production
+   obligations, is distinct from the actual action set A.  A missing
+   expected terminal record does not alone establish that an action
+   occurred without a receipt.  This revision defines no M-based claim
+   family.  A binding using expected-record evidence MUST state the
+   additional occurrence relation and retain the difference between
+   obligation fulfilment and coverage of actual actions.
+
+   Unresolved scope membership blocks positive conclusions that require
+   resolving that membership.  It MUST NOT be repaired by dropping an
+   inconvenient record, changing an epoch, or silently broadening a time
+   bound.  A changed cutoff, policy, scope, or input view produces a new
+   result linked to the prior result, not a rewrite of its historical
+   meaning.
+
+4.  Populations, Views, and Binding Relations
+
+   A  The real action occurrences in Omega.  A is the semantic subject,
+      not an oracle supplied to the evaluator.
+
+   C  All final action receipts actually created in the declared stream
+      for the scope by the creation cutoff.  Membership includes
+      erroneous or excess receipts and does not depend on proving that
+      their claimed action happened.
+
+   R  All action receipts of that declared stream and scope available to
+      the named recipient by the delivery cutoff under the binding's
+      collection semantics.  A receipt created after the creation cutoff
+      can belong to R but not C.  Such an extra member does not defeat
+      delivery-complete, but defeats delivery-exact when its membership
+      and absence from C are established.
+
+   Cv and Rv  Supplied views claimed to enumerate C and R, respectively.
+      The existence of a file, a successful query, or a seal of a view
+      does not itself establish Cv=C or Rv=R.
+
+   S  The supplied source-entry view used as evidence about A.  S does
+      not mean an undisclosed complete source.  Completeness of S
+      relative to A is itself a proposition.
+
+   Each view element has its own identity and a retained representation.
+   A binding MUST define its action relation and payload projection.  A
+   checked equal identifier string is not a substitute for checking the
+   relation.  Invalid or ambiguous stream elements MUST remain visible
+   in diagnostics; an evaluator MUST NOT remove them to manufacture
+   exact coverage.
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                 [Page 7]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   Let B be the binding relation between action receipts and real
+   actions.  Creation-complete requires at least one B-related c in C
+   for every a in A.  Creation-sound requires at least one B-related a
+   in A for every c in C.  Creation-exact requires degree exactly one at
+   every endpoint.  A related pair also satisfies the specified payload
+   predicate.  Completeness and soundness do not imply uniqueness or
+   unambiguous binding.  Degree is counted by distinct receipt and
+   action occurrences, not transport deliveries.
+
+   Let F relate source entries to real actions.  Source-complete means
+   every a in A has at least one related s in S.  Source-sound means
+   every s in S has at least one related a in A.  Source-exact
+   additionally requires each endpoint to have degree exactly one.
+   Completeness and soundness alone do not establish uniqueness or
+   unambiguous binding.
+
+   An implementation MAY collapse repeated delivery of the same
+   authenticated receipt identity and bytes under an explicit retry
+   rule, retaining the raw repeat count.  Distinct receipt identities
+   for one action are not retries.  Different bytes under one identity
+   are a conflict.  Different action occurrences with equal payloads
+   MUST NOT be merged.  No replacement or revocation rule that changes
+   the effective population is implicit in this baseline.
+
+   Receipt containment and equality use the declared identity-and-
+   authenticated-content equivalence rule, not identifier strings alone.
+   Rv is sound for R only when each supplied member is established as
+   available to the named recipient by its cutoff.  Signature validity
+   alone does not establish that membership.  A sound partial Rv can
+   provide positive delivery evidence without being an exhaustive
+   enumeration of R.
+
+5.  Claim Set
+
+   Claim identifiers below are local to this draft revision.  They are
+   not WEXP Core content bases or IANA registrations.
+
+   delivery-complete  Every member of C has an equivalent member in R
+      under the declared identity-and-content rule.  Extra members of R
+      are permitted.  This is C contained in R for the declared creation
+      cohort and recipient cutoff.
+
+   delivery-exact  C and R contain exactly the same receipt identities
+      and authenticated content under the declared equivalence rule.
+      This is bidirectional cutoff-bound equality.
+
+   supplied-correspondence  Rv and S have an exact one-to-one
+
+
+
+
+Sergeev                   Expires 26 April 2027                 [Page 8]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+      correspondence under the declared occurrence and payload
+      comparison predicate.  This claims only correspondence of supplied
+      views; it does not establish completeness of either view.
+
+   source-complete  Every real action in A is represented by at least
+      one F-related entry in S.
+
+   source-sound  Every entry in S is F-related to at least one real
+      action in A.
+
+   source-exact  F establishes an exact one-to-one correspondence
+      between S and A, including the declared payload predicate.
+
+   creation-complete  Every real action in A has at least one B-related
+      final action receipt in C.
+
+   creation-sound  Every final action receipt in C has at least one
+      B-related real action in A.  This does not establish single-valued
+      or unique binding.
+
+   creation-exact  B establishes an exact one-to-one correspondence
+      between A and C.
+
+   empty-actions  A has no members in the declared scope.  It says
+      nothing about another scope, unobserved future actions, or
+      authorization.
+
+   Each requested claim and each internal claim used as a dependency
+   MUST receive its own evaluation status and, when evaluated, its own
+   outcome and dependencies.  An evaluator MUST NOT use one all-or-
+   nothing gate for every claim or suppress a useful local comparison
+   because a stronger population claim remains unestablished.
+
+   The unqualified identifiers delivery and creation are not valid claim
+   identifiers in rule-set coverage/0.2.0.  A migration MUST record its
+   source version and explicit mapping; an old result is not a newly
+   performed evaluation.  It MUST NOT silently reinterpret an old exact
+   result as the weaker complete predicate or merge revisions of their
+   rule sets.
+
+6.  Premises and Trust Policy
+
+6.1.  Premise Records
+
+   A premise record MUST contain an identifier, a precise predicate and
+   version, its bound context, state, basis references, dependencies,
+   and limitations.  The states are:
+
+
+
+
+Sergeev                   Expires 26 April 2027                 [Page 9]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   *  checked: the named check succeeded in its declared scope; its
+      remaining assumptions and evidence references remain visible.
+
+   *  assumed: an exact predicate is explicitly accepted by the
+      identified policy, with the authority, reason, and scope of
+      acceptance recorded.  This is not a successful empirical check.
+
+   *  unknown: neither an accepted basis nor a counterexample is
+      available.
+
+   *  refuted: a counterexample to that premise is established under its
+      stated basis.  Refuting a premise is not automatically refuting
+      the target claim.
+
+   A usable derivation has only checked or policy-authorized assumed
+   dependencies, and those dependencies are jointly consistent.  The
+   dependency graph MUST be acyclic and terminate in explicit evidence
+   checks or assumptions.  An assumption MUST NOT merely restate the
+   claim being derived or an equivalent population guarantee.  Source
+   capture assumptions can be used only as separately specified
+   deployment properties, not inferred from agreement with receipts.
+   All transitive assumptions MUST be disclosed in the result.
+
+   Same administrative control does not make a record false, nor does a
+   different key establish independence.  A policy can accept a stated
+   controller property as an assumption or require protected evidence of
+   it.  Failure to meet the declared requirement leaves the dependent
+   claim unestablished.  An evaluator MUST NOT silently weaken the
+   policy to obtain a positive result.
+
+6.2.  View Closure Is Not Action Capture
+
+   The following predicates MUST be distinguished even if a deployment
+   combines them in one mechanism:
+
+   1.  Integrity and authenticity of the supplied view and its
+       individual objects.
+
+   2.  Bounded enumeration: all elements of that view were retrieved;
+       pagination, filters, failures, and retained invalid elements are
+       accounted for.
+
+   3.  Temporal closure: writers and in-flight events are accounted for
+       at the chosen cutoff.
+
+   4.  Branch coverage: the accepted history is not merely one of
+       several relevant forks or suppressed branches.
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 10]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   5.  Population-view exactness: Cv exactly enumerates C, or Rv exactly
+       enumerates R, under those obligations.
+
+   6.  Action capture, source truthfulness, and source occurrence
+       uniqueness relative to A.
+
+   A binding that supports a population-view exactness premise MUST
+   state how it addresses each applicable closure and collection
+   obligation and which part is assumed.  A seal authenticating a count
+   and digest checks only that commitment unless the binding establishes
+   more.  Two matching seals, two organizations, or an append-only
+   prefix do not by themselves establish complete action capture or fork
+   exclusion.
+
+   Observed empty and unavailable are different states.  An unavailable
+   view MUST NOT be substituted with an empty array.  A failed or
+   incomplete query MUST NOT be used as exhaustive evidence of absence.
+
+7.  Evaluation Rules
+
+   The rules below are sufficient derivations, not permission to invent
+   unspecified trust predicates.  A binding MUST define each normalized
+   check it supplies.  It MUST NOT label a boolean field checked solely
+   because the sender provided it.  Additional inference rules require a
+   distinct, disclosed rule-set revision; they are not silently part of
+   this baseline.
+
+7.1.  Support Rules
+
+   P1: Supplied correspondence  Usable Rv and S, resolved membership and
+      identities, and a checked exact bijection under the comparison
+      predicate support supplied-correspondence.  No assumption of
+      completeness relative to A, C, or R is implied.
+
+   P2a: Delivery completeness  Usable Cv=C, established membership of
+      every used Rv element in R at the named recipient and cutoff, and
+      a checked containment of every Cv member in Rv support delivery-
+      complete.  Rv need not enumerate all of R.  A proof that Rv
+      receipts are authentic without evidence of recipient availability
+      is insufficient.
+
+   P2b: Delivery exactness  Usable Cv=C and Rv=R, plus a checked exact
+      receipt identity and content equality Cv=Rv, support delivery-
+      exact.  Both views can be empty.  Neither P2 rule alone supports a
+      creation-family claim.
+
+   P3: Source predicates  A binding can support source-complete, source-
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 11]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+      sound, or source-exact through a scoped capture mechanism and
+      evidence checks.  It MUST identify routes, writers, lifecycle
+      stages, bypass paths, failure modes, and controller assumptions.
+      Source-exact requires completeness, soundness, single-valued
+      binding, and uniqueness of representation.  Agreement between S
+      and receipts is not a sufficient basis for these properties.  A
+      source-exact support derivation also supplies support derivations
+      for source-complete and source-sound, inheriting its entire basis.
+      These implications transport derivations, not final outcomes;
+      their conflicts are resolved before downstream reliance.
+
+   P4a: Creation completeness  Usable Cv=C and source-exact, together
+      with a checked relation G from Cv to S covering every member of S
+      and checked relation composition, support creation-complete.
+
+   P4b: Creation soundness  Under the same population and composition
+      premises, G relating every member of Cv to at least one S member
+      supports creation-sound.
+
+   P4c: Creation exactness  Under the same population and composition
+      premises, a checked exact G bijection supports creation-exact.
+      For all three P4 rules, relation composition means that G followed
+      by F yields exactly B on the declared populations, including
+      payload validity and every relevant binding.  An identifier-string
+      lookup alone is insufficient.  These sufficient rules are
+      deliberately conservative; they do not assert that a complete
+      source or created view is logically necessary for every possible
+      positive derivation.
+
+   P5: Creation through exact delivery  Rv can replace Cv in the P4
+      rules only when the aggregated delivery-exact result is supported
+      and Rv=R is usable.  Delivery-complete is insufficient because R
+      can contain additional receipts.  The receipt-to-source relation
+      and its composition must still be checked.  Every dependency of
+      the exact-delivery derivation is inherited.
+
+   P6: Empty actions  An actually available, fully read S with no
+      members, together with usable source-complete for that exact S and
+      scope, supports empty-actions.  Source soundness is unnecessary
+      for an empty S.  Empty receipts or a commitment to an empty source
+      view alone are insufficient.
+
+   P7: Family support implications  A usable creation-exact support
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 12]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+      derivation supplies creation-complete and creation-sound support
+      derivations.  A usable delivery-exact support derivation supplies
+      a delivery-complete support derivation.  These inherit the entire
+      basis.  The converse implications do not hold.  Like the P3 source
+      implications, these transport derivations before family outcomes
+      are aggregated, not previously aggregated outcome values.
+
+   P8: Vacuous predicates  An available, completely read empty Cv with
+      usable Cv=C supports delivery-complete and creation-sound without
+      enumerating R or A.  A supported aggregated empty-actions result
+      supports creation-complete without enumerating C.  Both bases
+      together support creation-exact.  These rules inherit all context
+      and premise dependencies.  Empty supplied arrays without their
+      required population premises do not activate them.
+
+7.2.  Refutation Rules and Minimal Counterexamples
+
+   N1: Local correspondence counterexample  A demonstrated extra,
+      missing, duplicate, or payload-mismatched element under the exact
+      supplied-view predicate refutes supplied-correspondence.  Any
+      absence-based comparison requires complete reading of the relevant
+      supplied view, not a claim that it exhausts A or C.
+
+   N2a: Missing delivery  A positively established member c of C and
+      usable Rv=R, with an exhaustive check showing no equivalent member
+      in Rv, refute delivery-complete and delivery-exact.  A different-
+      content member under the same identifier is not a substitute; an
+      unresolved element that could be equivalent blocks the negative
+      inference.  Full enumeration of C is unnecessary.
+
+   N2b: Extra recipient member  A positively established member of R
+      absent from a usable Cv=C refutes delivery-exact only.  The
+      exhaustive comparison must resolve identity and content
+      equivalence.  It does not refute delivery-complete.
+
+   N3: Missing creation  Positive evidence establishing a member a of A,
+      usable Cv=C, and an exhaustive, unambiguous binding check showing
+      no B-related receipt in Cv refute creation-complete and creation-
+      exact.  The evaluator need not enumerate all of A.  If an
+      uninterpretable element could bind to a, absence is not
+      established.
+
+   N4a: Duplicate or ambiguous creation binding  Two distinct positively
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 13]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+      established members of C bound to the same positively established
+      action refute creation-exact without complete enumeration of C.
+      One positively established member of C with two established
+      bindings to distinct members of A also refutes creation-exact.
+      Neither counterexample by itself refutes creation-complete or
+      creation-sound.
+
+   N4b: Orphan receipt  A positively established member c of C with a
+      justified exhaustive negative basis showing no B-related action in
+      A refutes creation-sound and creation-exact.  One sufficient basis
+      is usable source-exact and an exhaustive receipt-to-source
+      relation whose composition represents all B bindings of c.
+      Failure to find an action in an incomplete S is insufficient.
+
+   N5: Source counterexamples  A positively established action with no
+      F-related entry in the completely read supplied S refutes source-
+      complete.  If an uninterpretable or ambiguously bound source
+      element could represent the action, nonrepresentation is not
+      established.  Two distinct entries positively bound to the same
+      action, or one entry positively bound to two distinct members of
+      A, refute source-exact, but do not refute source-complete or
+      source-sound.  An entry known to have no real in-scope action
+      binding refutes source-sound; mere failure to establish its action
+      is not such knowledge.  Every usable refutation derivation for
+      source-complete or source-sound also refutes source-exact with the
+      entire inherited basis.
+
+   N6: Nonempty action scope  One positively established in-scope action
+      refutes empty-actions.  No complete receipt or source population
+      is required.
+
+   N7: Family refutation implications  Each usable refutation derivation
+      for creation-complete or creation-sound also refutes creation-
+      exact.  Each usable refutation derivation for delivery-complete
+      also refutes delivery-exact.  All dependencies are retained.  A
+      refutation of an exact predicate does not, in general, refute its
+      weaker predicates.
+
+   Each counterexample MUST preserve the scope, positive membership
+   evidence, relevant exhaustive search predicate, and its assumptions.
+   Malformed input, an unavailable source, or a failed authentication
+   check alone does not establish that a real action occurred without a
+   receipt.
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 14]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+7.3.  Deterministic Reporting Procedure
+
+   1.  Validate contract identity, requested claim identities, context
+       bindings, references, and dependency structure.  A malformed top-
+       level request produces an input error, not a fabricated coverage
+       result.  An unsupported contract or deployment-profile revision
+       is reported as unsupported input; it is not silently interpreted
+       as a supported revision.
+
+   2.  Record availability and validity per view.  Preserve
+       interpretable local findings when another view is unusable.  An
+       unavailable view is a valid reported condition, not necessarily a
+       malformed request.
+
+   3.  Resolve premise states and transitive assumptions under the fixed
+       policy.  Detect cycles, contradictory premises, unresolved
+       identity, and unresolved scope.  Do not derive a conclusion from
+       an internally inconsistent premise set.
+
+   4.  Evaluate primitive derivations and apply the P3, P7, N5, and N7
+       family implications before relying on any affected family
+       outcome.  These implications propagate exact support towards
+       weaker predicates and weaker refutation towards exact predicates;
+       they do not construct cyclic outcome dependencies.  Apply each
+       applicable support and refutation rule to each evaluated
+       requested claim and required internal claim, retaining rule
+       identifiers, exact witnesses, and dependency identifiers.
+       Internal claims not requested for display are marked as
+       dependencies, not as additional user requests.
+
+   5.  If at least one usable support and no usable refutation exists,
+       report supported.  If at least one usable refutation and no
+       usable support exists, report refuted.  If both exist, report
+       not-established with a conflict diagnostic and retain both
+       derivations.  If neither exists, report not-established with the
+       missing or unusable dependencies.
+
+   6.  Emit the bound result and its provenance.  Sort unordered
+       diagnostic collections by stable identifiers under the binding;
+       never rely on wall-clock time, a hidden oracle, or
+       nondeterministic iteration to select a verdict.
+
+   A failure to parse or authenticate an evidence package, an
+   unsupported required feature, or exhaustion of processing resources
+   MUST NOT by itself be reported as a refuted population claim.  When
+   producing a CoverageResult from a valid bound request, the evaluator
+   MUST preserve interpretable local findings and distinguish evaluated
+   not-established claims from requested claims not evaluated.  An
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 15]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   interface can apply its declared package-level rejection rules
+   without producing a CoverageResult; it MUST identify that processing
+   failure separately from claim outcomes.  Package rejection is not
+   permission to suppress an established counterexample in an emitted
+   result.  A failed or incomplete collection MUST NOT become an empty
+   view.
+
+   Package failure is distinct from invalid content in an established
+   population member.  An authenticated collection can establish that
+   particular retained bytes belong to C or R even when those bytes do
+   not constitute a valid action binding.  Such a candidate remains
+   visible and can contribute to a refutation only with the membership
+   and negative-binding basis required by Section 7.2.  Conversely,
+   inability to perform a cryptographic or interpretation check leaves
+   that binding unresolved; it does not establish that no binding
+   exists.  Independently usable byte-delivery or local-comparison
+   evidence is not discarded merely because an action-binding check
+   remains unresolved.
+
+   A derived claim MAY satisfy a downstream dependency only after
+   aggregation of its applicable support and refutation derivations
+   yields supported.  A refuted or not-established claim, including one
+   with a conflict diagnostic, MUST NOT be relabeled as a checked
+   premise by selecting one positive derivation.  An independently
+   sufficient alternative basis MAY be used with its own dependencies.
+   Required dependent claims are evaluated in dependency order after
+   their family implications have been resolved.  This applies to
+   source-exact in P4, delivery-exact in P5, source-complete in P6, and
+   empty-actions in P8.
+
+   Outcome names in this procedure mean support or refutation
+   conditional on the reported basis.  Even a checked premise has an
+   evidence scope and can have explicit assumptions.  An interface MUST
+   NOT render supported as an unconditional guarantee.  A false assumed
+   premise can yield a valid conditional derivation whose consequent is
+   false in the actual world.
+
+8.  Logical Result Contract
+
+   A CoverageResult MUST include the following logical information.
+   This section specifies meaning, not a universal serialization.  A
+   deployment profile specifies its encoding; the bounded encoding in
+   Appendix A is one such profile.
+
+   *  Contract and rule-set revision, result identity, evaluator
+      identity and revision, evaluation time, and immutable input/
+      context references.
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 16]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   *  Exact scope, cutoffs, receipt stream, recipient, deployment
+      binding, payload projection, policy identity and revision.
+
+   *  Each requested claim with an evaluation status.  An evaluated
+      claim has supported, refuted, or not-established, its derivations,
+      inherited assumptions, limitations, and any conflict.  A requested
+      claim not evaluated has no outcome and includes a reason, such as
+      a resource limit or an unimplemented check.  Assessing the
+      available basis and finding it insufficient is evaluated not-
+      established, not not-evaluated.
+
+   *  All referenced premise records with checked, assumed, unknown, or
+      refuted, check definitions, basis references, dependencies, and
+      the authority for assumptions.
+
+   *  View availability, enumerated versus complete-population status,
+      integrity and closure findings, and retained invalid or ambiguous
+      members.
+
+   *  Local comparison findings, including exact missing, extra,
+      duplicate, conflicting, mismatched, and unresolved identities.
+      Sensitive identities can be referenced through an access-
+      controlled evidence object without discarding their diagnostic
+      meaning.
+
+   *  Provenance of normalization and transformations, unperformed
+      checks, relevant evidence retention and retrieval limitations, and
+      references to superseded results if any.
+
+   Not-requested claims MUST NOT be displayed as evaluated not-
+   established claims.  A revision changing dependencies or assumptions
+   MUST obtain a new result identity.  Evidence references need
+   sufficient identity and retrieval semantics for the declared use; a
+   mutable URL alone is not an immutable evidence identity.
+
+   A conforming consumer MUST match the exact claim, scope, cutoffs,
+   recipient, and accepted assumptions to its task before relying on a
+   result.  A reduced display MUST preserve conditionality and conflict/
+   unknown status and provide access to the omitted basis.  No single
+   system-wide success label, Core accept verdict, legacy Core level
+   display, or signature-presence flag substitutes for these fields.
+
+   Consumer refusal to rely on a result is distinct from refutation of
+   its claims.  For example, a result for another recipient or cutoff
+   can contain valid conditional derivations yet be unusable for the
+   consumer's task.  An unsupported encoding, a failed package
+   authentication check, and a requested claim not evaluated MUST NOT be
+   displayed as a refuted claim without the required derivation.
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 17]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   As an informative implementation example, a consumer can recompute
+   evaluation from an evidence package under separately approved trust
+   inputs and expected context instead of accepting a caller-supplied
+   CoverageResult.  It can then accept when all required claims are
+   supported under that context and approved assumptions, reject when an
+   applicable required claim is refuted, and hold when required evidence
+   or processing is unavailable, unresolved, or mismatched.  These
+   application decisions are not new Coverage claim outcomes or a
+   mandatory decision vocabulary.  Recomputation checks the selected
+   evidence and rules; it does not make an approved collector's
+   assertions independently true or remove inherited assumptions.
+
+9.  Deployment Binding Requirements
+
+   A binding claiming conformance to this proposed logical contract MUST
+   publish, or make available within its authorized deployment, a
+   versioned definition of:
+
+   1.  Carrier parsing, critical-extension handling, authenticity
+       checks, and the interpretation of invalid records.
+
+   2.  Scope, lifecycle, action/receipt/source identity, payload
+       comparison, retries, multiplicity, and cutoff semantics.
+
+   3.  Each supported primitive premise, the check that can establish
+       it, its assumptions, and explicit treatment of collection,
+       capture, closure, and forks.
+
+   4.  Allowed assumption policy, control dependencies, freshness,
+       revocation of trust inputs, and deterministic normalization.
+
+   5.  The logical input/output encoding, input-error representation,
+       claim-level diagnostics, and downstream reliance interface.
+
+   6.  Positive and negative test cases, expected derivations,
+       reproducibility rules, and limitations of the deployment
+       validation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 18]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   An implementation claiming conformance MUST declare the logical
+   contract and rule-set revisions, supported deployment-profile
+   identifiers and revisions, carrier configurations, payload contracts,
+   input/output encodings and their revisions, and required extension
+   handling.  Its support declaration MUST identify supported claims,
+   primitive checks and evidence paths, unimplemented features, resource
+   limits, and the representation of unsupported inputs and processing
+   failures.  It MUST NOT imply support for every evidence path merely
+   because it emits the baseline claim identifiers.  A support
+   declaration does not authorize suppressing an applicable
+   counterexample or conflict, inventing a checked premise, or silently
+   ignoring an unsupported evidence branch.
+
+   Record-format compatibility, deployment-profile compatibility, and
+   compatibility for consumer reliance are distinct.  Parsing and
+   verifying the same carrier bytes does not establish agreement on
+   lifecycle, identities, population membership, closure, or claim
+   meaning.  A party claiming interoperability MUST identify the common
+   logical/rule revisions, profile and encoding, supported features, and
+   the scope of the exchange tested.  Before reliance, a consumer MUST
+   also match the exact context and approved policy, authorities and
+   assumptions.  An unrecognized required version or critical feature
+   MUST produce an explicit unsupported condition rather than a fallback
+   interpretation or a claim refutation.
+
+   Different policies may produce different results from the same raw
+   records.  Equivalent complete logical inputs under the same binding,
+   rule-set, policy, and context MUST produce equivalent claim outcomes
+   and dependencies.  Transport or incidental runtime metadata need not
+   have identical bytes unless a separate encoding contract requires it.
+
+   The generic logical requirements are stated in this document.  The
+   informative overview in Section 11 introduces the concrete normative
+   PostgreSQL profile specified in Appendix A; other profiles can
+   satisfy the generic contract without using PostgreSQL or that
+   carrier.  Reference code, private implementation notes and test
+   fixtures do not add undisclosed normative requirements.  Conformance
+   to logical reporting rules or a profile does not certify that capture
+   premises hold in a deployment.  A complete end-to-end
+   interoperability claim requires an implemented encoding and binding
+   as well as this logical contract, and does not by itself establish
+   independent operation or production qualification.
+
+10.  Illustrative Cases
+
+   These constructed examples illustrate the rules under stipulated
+   premises.  They are not observations of a deployment or evidence that
+   its capture, authentication or closure requirements hold.
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 19]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   E01: Conditional positive result  S represents a1 and a2 exactly
+      under a declared capture assumption and checked uniqueness.  Cv
+      and Rv each contain c1 and c2, with exact population-view
+      premises.  Checked relations bind c1 to a1 and c2 to a2, with no
+      extra relations.  P1, P2b, and P4c support supplied-
+      correspondence, delivery-exact, and creation-exact respectively,
+      conditional on the disclosed premises.  The family implications
+      also support the weaker predicates.
+
+   E02: Delivery loss  c2 is a known member of C but absent from an
+      exact Rv.  N2a refutes delivery-complete and delivery-exact.  Its
+      prior creation is positively evidenced; calling this a missing-
+      creation defect would be incorrect.
+
+   E03: Creation loss  a2 is positively established.  Cv exactly
+      enumerates C, but no receipt binds to a2.  N3 refutes creation-
+      complete and creation-exact even if the evaluator cannot enumerate
+      other actions.  This alone does not refute creation-sound.
+
+   E04: Source duplicate  Two distinct source entries both bind to a1,
+      and two distinct receipts correspond to those entries.  Source
+      completeness, source soundness, and Cv-to-S correspondence do not
+      establish creation-exact.  Source-exact is refuted; if both
+      receipts are established members of C, N4a also refutes creation-
+      exact.  Completeness and soundness can nevertheless hold in both
+      families.
+
+   E05: Incomplete receiver view  c2 is absent from Rv, but Rv=R is
+      unknown.  The supplied-view difference remains reportable; N2a
+      cannot infer non-delivery from that absence.  Conversely, an exact
+      Cv wholly contained in a sound partial Rv supports delivery-
+      complete under P2a, while delivery-exact remains not-established
+      without further evidence.
+
+   E06: Unavailable source  A query for S fails, while a sender supplies
+      a seal of an empty array.  S remains unavailable.  P6 cannot infer
+      empty-actions.
+
+   E07: Indistinguishable worlds  The same supplied evidence and assumed
+      capture premise occur in two worlds; one world also contains an
+      unrecorded action.  The evaluator returns the same conditional
+      result.  This does not establish the truth of the assumed premise;
+      a claim of unconditional real-world completeness would be unsound.
+
+   E08: Conflict  A support derivation uses an accepted capture
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 20]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+      assumption, while a separately usable counterexample establishes
+      an omitted action.  Both derivations are retained and the relevant
+      claim is not-established with conflict.  Changing policy to hide
+      the counterexample is not allowed.
+
+   E09: Empty scope and nonempty scope  An available, fully read empty S
+      and usable source-complete support empty-actions.  One positively
+      established in-scope action refutes empty-actions without
+      requiring a complete source.
+
+   E10: Scope mismatch  A valid seal belongs to a different epoch.  It
+      cannot support the population-view premise for the requested
+      epoch; cryptographic validity does not repair that mismatch.
+
+   E11: Later receipt at the receiver  C contains c1; exact R contains
+      both c1 and a later-created c2.  Delivery-complete is supported
+      and delivery-exact is refuted.  P5 cannot substitute Rv for Cv to
+      establish creation properties of C.
+
+   E12: Multiple receipts or ambiguous binding  Two receipts bound to
+      one action, or one receipt bound to two actions, can make B both
+      left-total and right-total while preventing it from being a
+      bijection.  With the full bases, creation-complete and creation-
+      sound are supported while creation-exact is refuted.
+
+   E13: Empty created population  An exactly enumerated empty C supports
+      delivery-complete and creation-sound even when A is unknown.  It
+      does not establish empty-actions or creation-complete.  An empty A
+      with nonempty C instead satisfies creation-complete but fails
+      creation-sound.
+
+   E14: Expected assignment  An assignment in M lacks a terminal record.
+      Without an occurrence basis, this does not establish membership in
+      A and cannot activate N3.  An obligation-fulfilment result would
+      answer a different question.
+
+11.  PostgreSQL Sealed-Ledger Profile: Informative Overview
+
+   This section is informative.  The normative definition of the bounded
+   pg-ledger/0.2.0 profile is in Appendix A.  The overview and
+   associated reference implementation do not add requirements to that
+   definition.  The profile uses a single-primary PostgreSQL 18 batch
+   lifecycle: an action is constituted by a committed append to the
+   named action ledger, not inferred to be an external business effect.
+   A deployment needing such an effect first needs a separately
+   specified and validated coupling.  This deliberately narrow lifecycle
+   provides a concrete source relation without claiming a universal
+   action oracle.
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 21]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   Every append and every seal locks the same epoch row.  Three
+   irreversible phases close actions, final receipt creation, and
+   recipient admission in order.  Finalization begins only after the
+   action seal commits; recipient admission and publication begin only
+   after the creation seal commits.  Waiting for the epoch lock accounts
+   for earlier in-flight transactions.  Sequence values and wall-clock
+   timestamps are not commit-order proofs.  The design uses PostgreSQL
+   locking and snapshot semantics [PG18].
+
+   Final action receipt bytes are retained at the committed finalization
+   boundary and must not be externally issued before that boundary.  A
+   completely read snapshot after all three seals supplies source,
+   finalization, and inbox views.  Raw duplicate attempts and
+   conflicting variants remain available; only authenticated identical
+   receipt occurrences can be normalized as retries.  Signed content
+   defines the action binding; untrusted database metadata cannot
+   substitute for it.
+
+   The profile specifies a selected CBOR and COSE carrier, context and
+   policy binding, authenticated collection, and result encoding.
+   Carrier verification authenticates the protected bytes; the profile
+   separately defines their interpretation and the basis for capture and
+   Coverage claims.  The complete requirements are in Appendix A.
+
+   The conditional premise basis includes correct PostgreSQL and host
+   operation, intact storage, enforced role separation, no bypass or
+   precommit publication, authenticated complete export, and stable keys
+   and policy.  A privileged administrator, a restore or fork, or
+   unobserved out-of-ledger issuance can defeat that basis.  Failover,
+   replacement receipts, cross-epoch aggregation, streaming admission,
+   and arbitrary external actions are outside this profile.  These are
+   bounded design choices, not claims that those uses are impossible.
+
+11.1.  Core Target Correspondence Example (Informative)
+
+   This example illustrates the information a future PG/Core joint-use
+   profile would need.  It is not a complete Core mapping profile, a new
+   conformance profile, or a claim of implemented interoperability.  The
+   pg-ledger/0.2.0 profile remains usable without Core.
+
+
+
+
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 22]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   The Coverage action is the durable commit of the admitted ledger row,
+   identified by (database incarnation, epoch UUID, action UUID), with
+   the exact payload bytes as its content, as defined in Appendix A.1.
+   A compatible Core mapping profile could designate that same commit
+   occurrence as its exact target.  Its immutable equality rules would
+   bind the three identity components and distinguish that occurrence
+   from receipt creation, delivery, or an external business effect.
+   Equal action UUIDs in different incarnations or epochs would not
+   match.
+
+   For a task requiring one Core appraisal for each action in the closed
+   epoch, the joint profile would have to establish the enumerated
+   action population and exactly one applicable target mapping per
+   required action.  Missing or multiple candidate mappings would remain
+   explicit failures of that correspondence, not evidence that the
+   action did not occur.  A valid target correspondence would not by
+   itself provide Core boundary, content base, PROV, or IV findings.
+   Those findings would still require the applicable Core mapping
+   profile and its evidence.
+
+   The associated Coverage context would retain the exact incarnation,
+   epoch, recipient, pinned policies and three committed logical seal
+   coordinates.  A Core evaluation time would not substitute for those
+   seals.  The task would specify which exact Core claim and Coverage
+   claims it needs, whether it accepts the five PG deployment
+   assumptions, and any additional shared-source limitations.  For
+   example, separately supported appraisals for 99 actions can coexist
+   with refuted creation completeness for an established closed
+   population of 100 actions when the required membership and exhaustive
+   negative-binding evidence establishes a missing receipt.  Merely
+   counting 99 appraisals would not establish that omission.  A positive
+   joint decision requiring complete receipt creation would then be
+   unavailable; the 99 appraisals would not be rewritten.
+
+11.2.  Examples of Other Deployment Bindings (Informative)
+
+   The following examples identify possible future profile work.  They
+   do not define additional evidence paths, extend pg-ledger/0.2.0, or
+   supply a basis for any supported claim.  The limited extension scope
+   follows the design considerations in [RFC6709]; this revision defines
+   no exhaustive catalogue or automatic profile-negotiation mechanism:
+
+   Streaming windows  A streaming profile would need finite declared
+      windows, separate action/creation/delivery boundaries, and rules
+      for late arrivals, closure and replay.  A watermark alone would
+      not establish complete capture.
+
+   Partitioned populations  A partitioned profile would need an
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 23]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+      established partition set, occurrence identity across partitions,
+      and evidence for each required closure and cross-partition
+      relation.  Matching per-partition counts would not establish
+      global exactness.
+
+   External effects  A profile for payments, external business mutations
+      or physical effects would need an explicit occurrence relation and
+      evidence for coupling the effect to its source and receipt,
+      including ambiguous failures.  A ledger append alone would not
+      establish the external effect.
+
+12.  Related Work and Reuse
+
+   Database completeness research distinguishes real-world facts from
+   information recorded by a process [QUERY-COMPLETENESS].  This draft
+   applies a similar separation to actual actions, source views, and
+   receipt populations.  Snapshot integrity alone does not supply the
+   missing capture premise.
+
+   ClaimReceipt [CLAIMRECEIPT] binds typed evidence and coverage checks
+   to a committed experiment manifest and retains inconclusive outcomes.
+   This is close prior work for claim-specific reporting and manifest-
+   based coverage.  The present distinction between M and A prevents a
+   manifest-bound obligation population from silently becoming an
+   actual-action population.  No priority claim is made for typed
+   evidence, conditional verification, or manifest reconciliation.
+
+   The disclosure-evidence proposal [DISCLOSURE] reconciles source
+   observations and receipt sets while exposing exclusions and
+   indeterminate cases.  Coverage adopts the need for visible scope and
+   uncertainty, while specifying separate creation, delivery, and source
+   predicates.  SCITT [RFC9943] can provide registration evidence for
+   statements; a transparency receipt is not itself proof of exhaustive
+   action capture, and is not counted as a new action receipt here.
+
+   Coverage combines these mechanisms in an explicit claim and
+   dependency contract for linked use with WEXP appraisals.  It does not
+   replace the deployment-specific mechanisms needed to establish
+   capture, closure or authority.
+
+13.  Relationship to WEXP Core and Joint Use
+
+   WEXP Core [WEXP-CORE] evaluates support for exact content claims.
+   Coverage evaluates separate population claims under an identified
+   deployment binding.  An exact Core chain target does not enumerate
+   every action in a population.  Coverage is not a Core content base,
+   qualifier, verdict, or legacy Witnessability Level display.  Either
+   contract can be used without implementing the other.  One
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 24]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   implementation, invocation, or report can serve both without merging
+   their semantics.
+
+   A mapper can establish ordinary Core predicates from appropriate
+   evidence under a specified Core mapping profile, but MUST NOT
+   reinterpret a Coverage outcome as execution, PROV, IV, or a new Core
+   base while claiming unchanged Core compatibility.  Conversely,
+   failure to establish population coverage does not by itself defeat
+   separately established evidence for a known action.
+
+   The informative Core citation identifies the referenced revision; it
+   is not a declaration of implemented compatibility with every Core
+   revision.  A joint-use support declaration identifies the exact
+   semantic and result contracts independently of that bibliographic
+   reference.
+
+   Core verdicts (accept, downgrade and reject), Coverage claim outcomes
+   (supported, refuted and not-established), and application-policy
+   decisions belong to separate contracts.  A Core level is a legacy
+   display, not the primary appraisal result.  Reusing an accept or
+   reject token in an application interface does not equate its decision
+   with a Core verdict.
+
+13.1.  Joint-Use Contract
+
+   A system claiming conformance to a joint-use profile MUST identify
+   the immutable profile revision and the exact Core semantics, Core
+   mapping and result contracts, Coverage deployment profile, rule set,
+   and result encoding that it supports.  Conformance to Core and
+   Coverage separately does not establish conformance to their joint
+   use.  This section defines requirements on such a profile; it does
+   not register or fully specify a concrete joint-use profile.
+
+   The joint-use profile MUST define:
+
+   1.  the meaning of the action on each side, the correspondence
+       between exact Core targets and Coverage population elements, the
+       evidence for that correspondence, its permitted cardinalities,
+       and the treatment of missing, ambiguous, conflicting, or
+       unsupported mappings;
+
+   2.  the supported tasks, their required exact Core claims and
+       Coverage claims, whether the task ranges over selected actions or
+       the full population, and the basis for any required exhaustive
+       enumeration;
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 25]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   3.  the required compatibility of scopes, epochs, recipients, logical
+       cutoffs, evaluation contexts, trust configurations, and policies,
+       including any additional transformation or correspondence
+       premises; equal identifiers alone do not establish compatible
+       meanings;
+
+   4.  the acceptance and validation of each supplied result, the
+       binding to its exact request and evidence, and preservation of
+       assumptions, counter-evidence, conflicts, evaluation gaps,
+       limitations, and failures; and
+
+   5.  the separate application-policy decision procedure, unsupported
+       version and missing-input behavior, and positive and negative
+       cases that distinguish the declared joint-use obligations.
+
+   A deployment profile determines its action domain but need not
+   support Core.  A selected joint-use profile MUST be consistent with
+   that deployment profile; a reference to a Core appraisal is not
+   itself a correspondence proof.  An action UUID shared by a committed
+   ledger append and an external payment does not identify the same
+   action unless the required semantic binding is separately
+   established.
+
+13.2.  Separate Results and Application Decision
+
+   A joint report MUST keep three parts distinguishable: the original
+   Core appraisals, the original CoverageResult or its production
+   failure, and the application-policy decision with the dependencies
+   used to make it.  The report MUST bind the parts to the selected task
+   and joint-use profile.  It MUST NOT replace either contract's result
+   with a single unqualified success label.  The application decision is
+   not an additional Core verdict or Coverage outcome.
+
+   Core rejection is not refutation of a Coverage claim.  Likewise,
+   Coverage not-established, input rejection, and not-evaluated are not
+   interchangeable.  A joint consumer MUST NOT convert an unavailable
+   result, an unsupported version, or a failed computation into evidence
+   that a world claim is false.  If a component required by the selected
+   task is absent, unsupported, unvalidated, or unusable, the consumer
+   MUST NOT issue a positive decision for that task.  A component not
+   required by a Core-only or Coverage-only task need not be produced.
+
+
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 26]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   Request provenance and processing failures MUST remain outside any
+   result whose contract does not permit those fields.  In particular, a
+   rejected appraisal that withholds its input-derived target or context
+   does not establish them.  A joint wrapper may retain the submitted
+   request and association attempt as separately labelled diagnostics;
+   it MUST NOT reconstruct a partial accepted appraisal or treat that
+   association attempt as a validated mapping.
+
+   Every relied-on assumption and limitation MUST remain traceable
+   through the application decision.  Where Core evidence and Coverage
+   collection share an issuer, administrator, observation source, or
+   other failure dependency, the joint profile MUST expose the relevant
+   dependency.  Independence is claim-relative: a shared source neither
+   automatically invalidates every IV claim nor permits independence
+   established for one check to be credited to the other.  Combining
+   results does not create a second independent observation of the same
+   source.
+
+   Names in a joint presentation MUST identify their contract.  For
+   example, a Core supported-base set and Coverage's receipt-action
+   relation are not the same object merely because each document uses B.
+   Consumer decisions, Core verdicts, and Coverage outcomes require
+   separate names or explicit qualification.
+
+13.3.  Limits and Further Profiles
+
+   Neither separate nor joint use establishes that every required action
+   was performed.  A population of actual actions A is not the set of
+   obligations M.  Establishing fulfilment of M requires a separate
+   obligation contract and evidence relating its requirements to
+   actions.  Coverage exactness under accepted deployment assumptions
+   does not automatically establish Core execution, PROV, IV, or an
+   external effect.
+
+   A future Core revision is a legitimate alternative if a demonstrated
+   consumer requirement cannot be represented safely by separate results
+   and explicit joint-use rules.  Reconsidering document packaging need
+   not first merge the semantic contracts.  A proposal for semantic
+   merger needs an explicit domain, compatibility analysis, and evidence
+   of the insufficiency of composition.
+
+
+
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 27]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+14.  Security Considerations
+
+   Adversaries can suppress creation, delivery, source capture, or query
+   results; truncate a valid prefix; present different forks to
+   different receivers; reuse an old seal; change scope membership;
+   merge distinct occurrences; or fabricate extra records.  The premise
+   and closure requirements in Section 6 make the applicable threat
+   basis and remaining assumptions explicit.  Resource exhaustion may
+   also prevent exhaustive enumeration; the closure requirements
+   prohibit promoting a partial result to exhaustive absence.
+
+   A cryptographic signature identifies its signed statement under its
+   verification assumptions.  It does not establish that the statement
+   is true, that a writer could not bypass instrumentation, or that a
+   different relevant branch does not exist.  Independent control is
+   useful only for the specific attack paths it constrains.  Multiple
+   observations can share failure modes or miss the same path.
+
+   Policy downgrade is a distinct risk: converting an unknown or refuted
+   premise into an assumed premise after seeing a desired result can
+   mislead a recipient.  The requirements in Section 8 retain policy
+   identity and the authority for every assumption; Section 6.1
+   prohibits silent policy weakening.  Reassessment after changing a
+   policy or context produces a new result under Section 3.
+
+   A missing receipt alone does not establish that an action did not
+   occur, and a receipt not delivered need not be a receipt not created.
+   Scope and lifecycle confusion can turn correct narrow evidence into
+   an unsupported broad conclusion.  The explicit claims in Section 5
+   and counterexample rules in Section 7 preserve these distinctions.
+
+15.  Privacy Considerations
+
+   Complete population reporting can reveal activity counts, timing,
+   identities, relationships, and omissions that individual receipts
+   would not expose.  A deployment SHOULD minimize disclosed fields and
+   use access-controlled basis references where appropriate.  Redaction
+   MUST preserve the checked predicate or explicitly limit the claim.  A
+   digest or stable identifier can still permit linkage.  Evidence
+   retention and deletion policies may make future rechecking
+   impossible; the retention and retrieval limitations required by
+   Section 8 make that boundary explicit.  A past result does not prove
+   continued evidence availability.
+
+16.  IANA Considerations
+
+   This document has no IANA actions.  The claim and state names are
+   draft-local logical labels, not registered protocol values.
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 28]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+17.  Implementation and Validation Status
+
+   This document specifies an experimental logical contract and the
+   optional pg-ledger/0.2.0 deployment profile.  An author-side
+   prototype and bounded PostgreSQL trials exercised the earlier pg-
+   ledger/0.1.0 and PG-SealedSnapshot/0.1.0 contracts, which are
+   historical implementation identifiers rather than normative
+   dependencies of this document.  Those trials do not establish
+   implementation conformance to the profile in this revision.
+   Appendix B describes the earlier prototype and its limits.
+
+   Author-side document, schema and constructed-example checks do not
+   establish deployment capture, independent interoperability,
+   production qualification or the truth of accepted operational
+   assumptions.  Independent substantive assessment and implementation
+   validation of pg-ledger/0.2.0 remain open.  A future report needs to
+   identify the exact contract, code, inputs, trust assumptions,
+   administrative control and observed results.
+
+18.  Normative References
+
+   [FIPS180-4]
+              National Institute of Standards and Technology, "Secure
+              Hash Standard (SHS)", FIPS 180-4,
+              DOI 10.6028/NIST.FIPS.180-4, August 2015,
+              <https://csrc.nist.gov/pubs/fips/180-4/upd1/final>.
+
+   [JSONSCHEMA]
+              Wright, A., Ed., Andrews, H., Ed., Hutton, B., Ed., and G.
+              Dennis, "JSON Schema: A Media Type for Describing JSON
+              Documents", Work in Progress, Internet-Draft, draft-
+              bhutton-json-schema-01, 10 June 2022,
+              <https://www.ietf.org/archive/id/draft-bhutton-json-
+              schema-01.txt>.
+
+   [JSONSCHEMA-VALIDATION]
+              Wright, A., Ed., Andrews, H., Ed., and B. Hutton, Ed.,
+              "JSON Schema Validation: A Vocabulary for Structural
+              Validation of JSON", Work in Progress, Internet-Draft,
+              draft-bhutton-json-schema-validation-01, 10 June 2022,
+              <https://www.ietf.org/archive/id/draft-bhutton-json-
+              schema-validation-01.txt>.
+
+   [PG18]     PostgreSQL Global Development Group, "PostgreSQL 18
+              Documentation", Major version 18; Sections 13.2, 13.3 and
+              19.5., 2026, <https://www.postgresql.org/docs/18/>.
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 29]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              <https://www.rfc-editor.org/info/rfc2119>.
+
+   [RFC3339]  Klyne, G. and C. Newman, "Date and Time on the Internet:
+              Timestamps", RFC 3339, DOI 10.17487/RFC3339, July 2002,
+              <https://www.rfc-editor.org/info/rfc3339>.
+
+   [RFC5234]  Crocker, D., Ed. and P. Overell, "Augmented BNF for Syntax
+              Specifications: ABNF", RFC 5234, DOI 10.17487/RFC5234,
+              January 2008, <https://www.rfc-editor.org/info/rfc5234>.
+
+   [RFC6901]  Bryan, P., Ed., Zyp, K., and M. Nottingham, Ed.,
+              "JavaScript Object Notation (JSON) Pointer", RFC 6901,
+              DOI 10.17487/RFC6901, April 2013,
+              <https://www.rfc-editor.org/info/rfc6901>.
+
+   [RFC8032]  Josefsson, S. and I. Liusvaara, "Edwards-Curve Digital
+              Signature Algorithm (EdDSA)", RFC 8032,
+              DOI 10.17487/RFC8032, January 2017,
+              <https://www.rfc-editor.org/info/rfc8032>.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
+              May 2017, <https://www.rfc-editor.org/info/rfc8174>.
+
+   [RFC8259]  Bray, T., Ed., "The JavaScript Object Notation (JSON) Data
+              Interchange Format", RFC 8259, DOI 10.17487/RFC8259,
+              December 2017, <https://www.rfc-editor.org/info/rfc8259>.
+
+   [RFC8792]  Watsen, K., Auerswald, E., Farrel, A., and Q. Wu,
+              "Handling Long Lines in Content of Internet-Drafts and
+              RFCs", RFC 8792, DOI 10.17487/RFC8792, June 2020,
+              <https://www.rfc-editor.org/info/rfc8792>.
+
+   [RFC8949]  Bormann, C. and P. Hoffman, "Concise Binary Object
+              Representation (CBOR)", RFC 8949, DOI 10.17487/RFC8949,
+              December 2020, <https://www.rfc-editor.org/info/rfc8949>.
+
+   [RFC9052]  Schaad, J., "CBOR Object Signing and Encryption (COSE):
+              Structures and Process", RFC 9052, DOI 10.17487/RFC9052,
+              August 2022, <https://www.rfc-editor.org/info/rfc9052>.
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 30]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   [RFC9864]  Jones, M. B. and O. Steele, "Fully-Specified Algorithms
+              for JSON Object Signing and Encryption (JOSE) and CBOR
+              Object Signing and Encryption (COSE)", RFC 9864,
+              DOI 10.17487/RFC9864, October 2025,
+              <https://www.rfc-editor.org/info/rfc9864>.
+
+19.  Informative References
+
+   [CLAIMRECEIPT]
+              Zhu, P. and S. Chang, "ClaimReceipt: Verifying Evidence
+              Sufficiency and Coverage in Agent Evaluations",
+              arXiv 2609.01992v1, September 2026,
+              <https://arxiv.org/abs/2609.01992v1>.
+
+   [DISCLOSURE]
+              Dogru, E. C., "Transformation Evidence and Coverage
+              Reconciliation for Auditable Data Disclosure", Work in
+              Progress, Internet-Draft, draft-dogru-scitt-disclosure-
+              evidence-07, August 2026,
+              <https://datatracker.ietf.org/doc/html/draft-dogru-scitt-
+              disclosure-evidence-07>.
+
+   [QUERY-COMPLETENESS]
+              Razniewski, S., Montali, M., and W. Nutt, "Verification of
+              Query Completeness over Processes [Extended Version]",
+              arXiv 1306.1689v1, June 2013,
+              <https://arxiv.org/abs/1306.1689v1>.
+
+   [RFC6709]  Carpenter, B., Aboba, B., Ed., and S. Cheshire, "Design
+              Considerations for Protocol Extensions", RFC 6709,
+              DOI 10.17487/RFC6709, September 2012,
+              <https://www.rfc-editor.org/info/rfc6709>.
+
+   [RFC9943]  Birkholz, H., Delignat-Lavaud, A., Fournet, C., Deshpande,
+              Y., and S. Lasker, "An Architecture for Trustworthy and
+              Transparent Digital Supply Chains", RFC 9943,
+              DOI 10.17487/RFC9943, June 2026,
+              <https://www.rfc-editor.org/info/rfc9943>.
+
+   [WEXP-CORE]
+              Sergeev, M., Ed. and V. Ikher, "WEXP Core: Witnessability
+              Appraisal Semantics for Execution-Related Claims", Work in
+              Progress, Internet-Draft, draft-sergeev-wexp-core-02, 23
+              October 2026, <https://datatracker.ietf.org/doc/html/
+              draft-sergeev-wexp-core-02>.
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 31]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+Appendix A.  PostgreSQL Ledger Profile 0.2.0
+
+   This appendix specifies the optional experimental profile wexp-
+   coverage-pg-ledger, version 0.2.0, abbreviated pg-ledger/0.2.0.
+   General logical Coverage conformance does not require this profile.
+   This appendix is normative when this profile is selected.  An
+   implementation claiming this profile MUST satisfy its operational,
+   encoding, evidence and result requirements in addition to the
+   applicable logical requirements of this document.  This appendix
+   preserves the profile's finite, sealed-ledger semantics; it does not
+   extend the action domain or establish a Core content claim.
+
+   The scope is one PostgreSQL 18 primary, one fixed configuration
+   epoch, one action type and one named recipient.  The profile uses a
+   complete direct snapshot.  A broker, outbox, WAL-decoding service or
+   transparency service is not required.  Appendix A.9 specifies the
+   complete PG-SealedSnapshot/0.2.0 authenticated collection interchange
+   selected by this profile.  Another authentication mechanism requires
+   its own specified evidence contract.  This profile selects one fully
+   sealed branch.  The consumer interface and implementation limits in
+   Appendix B are not requirements on every logical Coverage evaluator.
+
+   PostgreSQL 18 is the deliberately bounded major-version compatibility
+   target of this experimental profile.  The restriction fixes the
+   collection and operational contract; it is not a claim that the
+   required database primitives were introduced in that version.
+   Supporting another major version requires a separately identified
+   profile revision and validation of its applicable collection,
+   configuration and lifecycle requirements.  Changing a version label
+   or schema pattern alone does not establish that compatibility.
+
+   Version 0.2.0 is a distinct contract.  An implementation MUST NOT
+   silently relabel a package, policy, collection record or result from
+   another profile revision as 0.2.0.  Migration requires validation of
+   this version's full requirements, newly approved scope and assumption
+   policy, and a newly authenticated collection record.  The selected
+   carrier is N2-COSE-Sign1-Ed25519/0.1.0 and the logical rules are
+   coverage/0.2.0.  Evidence about another profile revision alone does
+   not establish implementation conformance to this version.
+
+A.1.  Action Domain, Identity and Authority
+
+   An action is the durable commit of an admitted action-ledger row.
+   Its identity is the tuple (database incarnation, epoch UUID, action
+   UUID); its content is the exact payload byte string.  Different
+   action UUIDs identify different actions even when their payloads are
+   equal.  Failed or rolled-back admission is not an action.  Loss of
+   the client's commit response does not undo a committed action.  The
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 32]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   epoch begins with its committed open record.
+
+   A is every admitted action in the immutable sealed epoch slice whose
+   transaction commits no later than the action-seal transaction,
+   including admission in that same transaction and actions with lost
+   replies.  Admission and sealing are governed by the epoch lock and
+   committed seal state, never numerical transaction-ID ordering.  S is
+   that full sealed slice.  F(s,a) holds exactly when incarnation,
+   epoch, action UUID and raw payload bytes agree.  G(c,s) applies the B
+   predicate in Appendix A.5 to s's action identity and payload;
+   established source exactness supplies its composition with F to B.
+   Action uniqueness does not imply receipt uniqueness.
+
+   The domain excludes external payments, network delivery, physical
+   effects, mutations to other business tables, rejected requests and
+   effects produced by other systems.  Including one of those effects
+   requires another binding establishing its relation to the ledger.
+   Planned or expected work MUST NOT be substituted for the actual
+   action population.
+
+   The deployment has a non-login owner and five non-login capability
+   roles: action writer, finalizer, recipient receiver, sealer and
+   reader.  Authenticated login principals receive minimum memberships.
+   Application principals MUST NOT own profile objects, unintentionally
+   inherit owner or sealer capabilities, have superuser or role-
+   administration powers, install arbitrary extensions, or obtain a
+   direct write path bypassing admission.  Sender and finalizer
+   principals MUST NOT hold the receiver capability; that capability
+   belongs to the named recipient service.  The collector uses the
+   reader role.  Signer and publisher need reader access to sealed
+   actions and committed final bytes; this access grants no writes and
+   does not waive publication ordering.
+
+   The owner, database and host administrators, credential
+   administration, configuration auditor, and PostgreSQL and storage
+   correctness are trusted.  Sender and receiver storage share an
+   administrative domain.  Role separation establishes operational
+   separation, not independent administration or resistance to a
+   malicious administrator.  Receiver possession is limited to the named
+   durable inbox, not downstream application execution.
+
+   A key or policy change, restore, failover, primary replacement,
+   timeline fork, schema or privilege change, or action-scope change
+   requires a new incarnation or epoch and explicit new verification.
+   This version specifies no transition inference.  An unexplained
+   discontinuity leaves affected premises unestablished; assigning a new
+   identifier does not repair earlier loss.
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 33]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+A.2.  Pinned Epoch Policy
+
+   SHA-256 in this profile is the 256-bit hash function specified by
+   [FIPS180-4].  All artifact and payload digests apply to the exact
+   stated bytes.
+
+   Before opening an epoch, the verifier MUST pin the exact bytes and
+   SHA-256 digest of an externally approved policy.  The policy is the
+   deterministic CBOR map below with exactly eight integer keys.  UUID
+   values are 16 bytes obtained by removing the hyphens from the
+   canonical UUID representation and hexadecimal-decoding the resulting
+   32 hexadecimal digits, preserving their displayed byte order.  JSON
+   UUIDs use lowercase hexadecimal and hyphens as specified by the
+   schemas; this version imposes no UUID-version, nonzero-UUID or
+   unequal-incarnation-and-epoch requirement.
+
+           +=====+================+============================+
+           | Key | Type           | Value                      |
+           +=====+================+============================+
+           | 1   | text           | wexp-coverage-pg-ledger    |
+           +-----+----------------+----------------------------+
+           | 2   | text           | 0.2.0                      |
+           +-----+----------------+----------------------------+
+           | 3   | 16-byte string | database incarnation UUID  |
+           +-----+----------------+----------------------------+
+           | 4   | 16-byte string | epoch UUID                 |
+           +-----+----------------+----------------------------+
+           | 5   | text           | named recipient identifier |
+           +-----+----------------+----------------------------+
+           | 6   | text           | issuer identifier          |
+           +-----+----------------+----------------------------+
+           | 7   | 1 to 64 bytes  | issuer key identifier      |
+           +-----+----------------+----------------------------+
+           | 8   | 32 bytes       | Ed25519 public key         |
+           +-----+----------------+----------------------------+
+
+                            Table 1: Policy Map
+
+   Recipient and issuer identifiers contain 1 to 256 Unicode scalar
+   values.  Text comparisons use exact UTF-8 bytes, without
+   normalization, case folding or URI rewriting.  The verifier MUST
+   recompute the policy digest and match every policy-bearing epoch
+   field to the pin: incarnation, epoch, recipient, issuer, key
+   identifier, public key and policy digest.  A key supplied in the
+   snapshot does not itself establish authority.
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 34]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+A.3.  Admission, Three Committed Barriers and Durability
+
+   Every admission and every seal MUST acquire the same exclusive epoch-
+   row lock, hold it through transaction end, and examine the
+   appropriate seal state after acquiring it.  The applicable PostgreSQL
+   row-lock and transaction behavior is specified in [PG18].  This
+   serializes admission with closure; it is not a wall-clock ordering
+   rule.
+
+   +==========+=========================+==============================+
+   | Phase    | Admission condition     | Committed closing seal       |
+   +==========+=========================+==============================+
+   | Action   | Epoch open; action      | All prior admitted actions   |
+   |          | seal absent             | committed or rolled back;    |
+   |          |                         | later action admissions fail |
+   +----------+-------------------------+------------------------------+
+   | Creation | Action seal             | All prior admitted           |
+   |          | committed in a prior    | finalizations committed or   |
+   |          | transaction;            | rolled back; later           |
+   |          | creation seal absent    | finalizations fail           |
+   +----------+-------------------------+------------------------------+
+   | Receiver | Creation seal           | All prior admitted inbox     |
+   |          | committed in a prior    | writes committed or rolled   |
+   |          | transaction;            | back; later arrivals fail    |
+   |          | receiver seal absent    |                              |
+   +----------+-------------------------+------------------------------+
+
+                         Table 2: Admission Phases
+
+   The three seals MUST commit in different transactions.  A stage MUST
+   NOT advance on the basis of its own uncommitted sealing transaction.
+   There is no reopening operation.  A rolled-back seal closes nothing.
+   A blocked writer MUST recheck the seal state; a serialization failure
+   requires retrying the entire transaction, never bypassing admission.
+   A timeout is failure to obtain a seal, not evidence of an empty
+   population.  A writer wins admission when it obtains the lock before
+   the seal and subsequently commits.
+
+   An action admission and action seal MAY occur in the same
+   transaction; creation still waits for that transaction's commit.  The
+   cutoff is the committed logical seal.  Sequence numbers and
+   transaction identifiers are identifiers and diagnostic coordinates,
+   not counts, clocks or completeness arguments.  The three seal
+   coordinates MUST be distinct positive unsigned xid8 values; the wire
+   contract does not require numerical ordering.
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 35]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   The database MUST use durable logged tables, fsync=on,
+   full_page_writes=on, functioning durable storage and
+   synchronous_commit=on at the commit of every operation and seal.  An
+   installation-time setting alone is insufficient: a transaction driver
+   can change a transaction-local setting before commit.  An ambiguous
+   commit response requires reconnecting and checking durable state.  A
+   returned admission or seal result before COMMIT does not establish
+   durability.
+
+A.4.  Selected CBOR and COSE Carrier
+
+   The selected carrier is N2-COSE-Sign1-Ed25519/0.1.0.  It uses the
+   core deterministic encoding requirements of [RFC8949], Section 4.2.1.
+   The restricted CBOR language consists of integers from -2^64 through
+   2^64-1, byte strings, valid UTF-8 text, arrays and maps; map keys are
+   integers, byte strings or text.  Booleans, null, floating point,
+   complex map keys, indefinite lengths and tags are excluded except for
+   the one outer carrier tag below.  Map keys are ordered by bytewise
+   lexicographic comparison of their encoded bytes, not length-first
+   order.  Duplicate keys, non-shortest encodings, out-of-order keys and
+   trailing bytes MUST be rejected from the received encoding.
+
+   A record is shortest-form CBOR tag 18 followed by the four-element
+   COSE_Sign1 array [protected, {}, payload, signature], following
+   [RFC9052], Sections 4.2 and 4.4.  The protected byte string is the
+   deterministic encoding of exactly {1: -19, 4: kid}.  Algorithm -19 is
+   the fully specified Ed25519 identifier in [RFC9864]; polymorphic
+   EdDSA -8 is not accepted.  The unprotected map is empty, the payload
+   is an embedded byte string, and the signature is 64 bytes.  There are
+   no additional headers, fields or tags, no detached payload and no
+   algorithm negotiation.
+
+   The signed bytes are the deterministic encoding of ["Signature1",
+   protected, h'', payload], with empty external AAD.  The verifier MUST
+   check the exact expected key identifier and use the externally pinned
+   raw 32-byte public key with the Ed25519 verification rules of
+   [RFC8032].  Signature length alone is not verification.  It MUST NOT
+   silently repair or reserialize received bytes.  Successful carrier
+   verification authenticates the exact embedded bytes under that key;
+   authorization, payload meaning, identity, closure and Coverage claims
+   require the separate checks below.
+
+
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 36]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   Each encoded or decoded CBOR object and the complete tagged record is
+   at most 65,536 bytes.  Each container has at most 10,000 direct
+   entries.  Root depth is zero; a child increments depth by one, with
+   maximum depth 16.  A decoder MUST enforce lengths, container sizes
+   and depth before unbounded allocation.  The record limit includes
+   overhead: a one-byte key identifier allows at most 65,457 payload
+   bytes.  No truncation or normalization is permitted.  These bounds
+   also apply to the signed collection record.
+
+       +=======================+===================================+
+       | Code                  | Meaning                           |
+       +=======================+===================================+
+       | INVALID_TYPE          | Wrong input value type at a       |
+       |                       | carrier interface                 |
+       +-----------------------+-----------------------------------+
+       | CBOR_INVALID          | Malformed, truncated,             |
+       |                       | unsupported-type or trailing CBOR |
+       +-----------------------+-----------------------------------+
+       | NON_CANONICAL         | Alternate encoding, duplicate key |
+       |                       | or unordered key                  |
+       +-----------------------+-----------------------------------+
+       | RESOURCE_LIMIT        | Byte, depth, container or         |
+       |                       | integer-range bound exceeded      |
+       +-----------------------+-----------------------------------+
+       | INVALID_STRUCTURE     | Unsupported carrier shape,        |
+       |                       | headers, tag or key-ID length     |
+       +-----------------------+-----------------------------------+
+       | UNSUPPORTED_ALGORITHM | Protected algorithm is not        |
+       |                       | integer -19                       |
+       +-----------------------+-----------------------------------+
+       | KEY_ID_MISMATCH       | Protected key ID differs from the |
+       |                       | supplied pin                      |
+       +-----------------------+-----------------------------------+
+       | INVALID_KEY           | Raw key length is not 32 bytes    |
+       +-----------------------+-----------------------------------+
+       | INVALID_SIGNATURE     | Ed25519 verification rejects the  |
+       |                       | signature                         |
+       +-----------------------+-----------------------------------+
+       | CRYPTO_UNAVAILABLE    | Required Ed25519 verification is  |
+       |                       | unavailable                       |
+       +-----------------------+-----------------------------------+
+
+                    Table 3: Carrier Failure Categories
+
+   These are the selected carrier's stable failure categories;
+   diagnostic wording and error priority for multiply invalid input are
+   not an interoperability interface.  CRYPTO_UNAVAILABLE MUST remain
+   unresolved verification, not an invalid-signature finding.  Resource
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 37]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   exhaustion invalidates the attempted computation; it does not
+   authorize removing a candidate from a population.  This carrier
+   definition makes no assertion of byte compatibility with a WEXP Core
+   carrier.
+
+A.5.  Final Receipt Payload and B
+
+   The final receipt payload is the deterministic CBOR encoding of
+   exactly the following ten-key map.  Its carrier uses the policy's
+   issuer key and key identifier.
+
+           +=====+==========+=================================+
+           | Key | Type     | Binding                         |
+           +=====+==========+=================================+
+           | 1   | text     | wexp-coverage-pg-ledger         |
+           +-----+----------+---------------------------------+
+           | 2   | text     | 0.2.0                           |
+           +-----+----------+---------------------------------+
+           | 3   | 16 bytes | epoch UUID                      |
+           +-----+----------+---------------------------------+
+           | 4   | 16 bytes | database incarnation UUID       |
+           +-----+----------+---------------------------------+
+           | 5   | 16 bytes | receipt UUID, equal to the      |
+           |     |          | retained envelope's receipt key |
+           +-----+----------+---------------------------------+
+           | 6   | 16 bytes | action UUID                     |
+           +-----+----------+---------------------------------+
+           | 7   | 32 bytes | SHA-256 of the exact action     |
+           |     |          | payload bytes                   |
+           +-----+----------+---------------------------------+
+           | 8   | text     | pinned recipient identifier     |
+           +-----+----------+---------------------------------+
+           | 9   | 32 bytes | SHA-256 of the exact pinned     |
+           |     |          | policy bytes                    |
+           +-----+----------+---------------------------------+
+           | 10  | text     | pinned issuer identifier        |
+           +-----+----------+---------------------------------+
+
+                      Table 4: Final Receipt Payload
+
+
+
+
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 38]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   B(c,a) holds exactly when the full received carrier and payload
+   encodings and Ed25519 signature are valid, all policy, scope and
+   identity bindings match, the action UUID equals a's UUID, and the
+   payload hash equals SHA-256 of a's exact payload.  No timestamp,
+   count or signer-provided completeness flag establishes B.  Unknown
+   keys, invalid signatures, wrong scope, wrong payload hashes and
+   references to absent actions remain retained candidates with no valid
+   B edge.  Unavailable cryptography or policy verification leaves the
+   check unresolved; it MUST NOT create a negative B edge.
+
+A.6.  Finalization, Retries and Recipient Possession
+
+   Signing occurs only after the signer can read the committed action
+   seal and sealed action.  Finalization is the durable admission of
+   full final bytes to the finalization ledger, not signing, an outbox
+   intention or a precommit return value.  The publisher MUST wait for
+   the committed creation seal and publish only committed finalization-
+   ledger bytes.  Precommit or unrecorded publication removes the basis
+   for Cv=C.  An authorized signer can leak bytes outside the database,
+   so this is also an application and audit obligation.
+
+   The transport envelope is (epoch UUID, receipt UUID, final bytes).
+   Both ledgers MUST retain every committed attempt, including identical
+   retries, conflicting variants, orphan references and malformed bytes.
+   Admission and collection MUST NOT suppress evidence through receipt-
+   key uniqueness, action-reference uniqueness, receipt-to-action
+   referential constraints or receipt-validity filters.  Raw entry IDs
+   identify attempts, not receipts.
+
+   Trusted admission and authenticated capture MUST establish each
+   occurrence's context, outer receipt key and exact retained bytes.
+   Only with that basis may exact duplicate (epoch UUID, receipt UUID,
+   final bytes) tuples be normalized as retries.  All original entry IDs
+   MUST remain available in diagnostics or normalization provenance.
+   Without that basis, affected normalization, identity and delivery
+   checks remain unresolved.  Arbitrary supplied byte equality is
+   insufficient.
+
+   C and R are the resulting finalization and inbox candidate sets.
+   Different receipt UUIDs remain distinct even when they refer to the
+   same action.  Different bytes under one UUID are retained as separate
+   candidate variants and exposed as an identity conflict.  An evaluator
+   MUST NOT select a preferred variant to obtain exactness.  Malformed
+   candidates remain in C or R.  Authenticated outer identity and the
+   signed payload's agreement with it are separate checks.
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 39]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   Creation completeness requires a B-related candidate for each A
+   element; creation soundness requires a B-related A element for each C
+   candidate; creation exactness requires the bijection and no
+   unresolved identity conflict.  Two valid receipt UUIDs for one action
+   can preserve completeness and soundness while refuting exactness.
+
+   The named recipient MUST commit the full envelope to its inbox before
+   acknowledgment.  Ordinary sender privileges MUST NOT permit inbox
+   writes.  R describes durable possession in that inbox, not downstream
+   processing.  A signature alone does not establish possession.  Given
+   authenticated candidate identity and the logical prerequisites,
+   delivery completeness compares C subset R by exact tuple equality,
+   and delivery exactness compares C=R with conflict handling.  Delivery
+   of malformed or wrongly signed final bytes can therefore be supported
+   while B is false or unresolved.  Excess receiver candidates alone do
+   not refute delivery completeness.
+
+   This is a finite batch contract.  Post-creation-seal finalizations
+   and post-receiver-seal arrivals are rejected.  Continuously open late
+   arrivals, cross-epoch supersession, revocation and policy rotation
+   are unspecified.  Reissuing under a new UUID before closure adds a
+   candidate rather than replacing the original.  Pending signing work
+   is not a receipt.  With exact populations, a missing finalization at
+   the cutoff is a creation counterexample even if recovery could
+   succeed in a later epoch.
+
+A.7.  Complete Collection and Snapshot Encoding
+
+   The collector MUST begin a fresh read-only REPEATABLE READ
+   transaction after closure, observe the committed receiver seal in its
+   stable snapshot, and enumerate every row of the three epoch slices.
+   The snapshot is one UTF-8 JSON object conforming to Appendix A.14.1.
+   It includes all policy columns, the three seal coordinates, every
+   action, and every raw finalization and receiver attempt.  There is no
+   validity, success, key, time, content or pagination filter.  Row
+   security MUST NOT silently hide rows; the specified collection uses
+   row_security=off, for which an applicable row-security policy is an
+   error.
+
+   Collection requires successful process completion and COMMIT.  A
+   partial file, timeout, resource failure, missing epoch or missing
+   seal is an unavailable collection, never an empty or usable partial
+   population.  An empty array alone does not establish empty actions.
+   Replacing the bounded one-object snapshot with pagination requires a
+   separately specified and reviewed stable-snapshot collection
+   protocol.
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 40]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   The snapshot's server_version identifies PostgreSQL 18.
+   snapshot_coordinate is the colon-delimited PostgreSQL snapshot
+   coordinate string defined by the schema; it is not a population
+   count.  Action payloads and retained final bytes use lowercase, even-
+   length hexadecimal.  Action UUIDs MUST be unique within the snapshot.
+   Raw entry IDs MUST be canonical positive decimal strings less than
+   2^63 and unique within their respective attempt ledger.  Seal
+   coordinates MUST be canonical positive decimal strings less than
+   2^64.  Receipt keys intentionally need not be unique.
+
+   The package includes exact output bytes and their digest, the
+   approved policy, endpoint identity, schema and grants audit, server
+   configuration, seal-operation outcomes, and driver, publication and
+   inbox evidence.  Their provenance MUST be authenticated through the
+   trusted collection procedure or a separately specified mechanism.  An
+   export is not self-authenticating and is not a cryptographic proof of
+   complete database history.
+
+       +============+==============================================+
+       | Obligation | Required basis                               |
+       +============+==============================================+
+       | S exact    | Complete immutable sealed action slice;      |
+       | for A      | authenticated endpoint, epoch, configuration |
+       |            | and admission semantics                      |
+       +------------+----------------------------------------------+
+       | Cv=C       | Complete sealed finalization slice; durable  |
+       |            | finalization; no precommit or bypass         |
+       |            | publication; all raw evidence retained       |
+       +------------+----------------------------------------------+
+       | Rv=R       | Complete sealed named-recipient inbox;       |
+       |            | exclusive recipient admission and durable    |
+       |            | possession; authenticated collection         |
+       +------------+----------------------------------------------+
+       | B          | All carrier, key, policy, UUID and exact-    |
+       |            | payload-hash checks                          |
+       +------------+----------------------------------------------+
+       | Negative   | Exact relevant populations and authenticated |
+       | or empty   | stable cutoffs; no truncation, mistaken      |
+       | conclusion | rollback or unexplained discontinuity        |
+       +------------+----------------------------------------------+
+
+                      Table 5: Population Obligations
+
+   No input flag such as source_exact=true can establish a premise.  The
+   adapter MUST report reasoned evidence references and unresolved
+   checks.  Conflicting admissible evidence branches MUST remain
+   visible.
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 41]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+A.8.  Explicit Deployment Assumptions
+
+   The separately approved assumption policy conforms to Appendix A.14.3
+   and binds the same incarnation and epoch as the signing policy.
+   Accepted predicates have version pg-ledger/0.2.0, unique entry IDs
+   and unique predicate names.  Each acceptance MUST identify authority,
+   reason, limitations and its relevant transaction interval within that
+   scope.  Only these five predicates are permitted; a target claim or
+   complete-population assertion is not an acceptable substitute.
+
+   Every accepted predicate covers the same database incarnation and
+   epoch from the commit opening that epoch through the successful
+   COMMIT of the collection transaction producing the snapshot bound by
+   this evaluation.  The policy and manifest digests bind this
+   acceptance to the evaluated package.  The reason and limitations
+   fields explain the acceptance but MUST NOT narrow that interval or
+   replace the predicate.  If the authority accepts only a shorter
+   interval, that predicate is omitted and dependent premises remain
+   unestablished.  The policy-level version identifies the approving
+   policy revision; it is distinct from predicate_version.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 42]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+    +========================================+========================+
+    | Predicate                              | Accepted property      |
+    +========================================+========================+
+    | trusted-database-host-administration   | Trusted administrators |
+    |                                        | did not bypass, alter  |
+    |                                        | or suppress the        |
+    |                                        | declared ledger or     |
+    |                                        | epoch evidence during  |
+    |                                        | the scoped interval    |
+    +----------------------------------------+------------------------+
+    | correct-postgresql-storage             | PostgreSQL and durable |
+    |                                        | storage honored the    |
+    |                                        | declared transaction   |
+    |                                        | and durability         |
+    |                                        | semantics during that  |
+    |                                        | interval               |
+    +----------------------------------------+------------------------+
+    | exclusive-principal-capabilities       | Only declared          |
+    |                                        | principals possessed   |
+    |                                        | admission capabilities |
+    |                                        | and their credentials  |
+    |                                        | remained under the     |
+    |                                        | stated controllers     |
+    +----------------------------------------+------------------------+
+    | publisher-obeys-finalization-order     | Signer and publisher   |
+    |                                        | obeyed durable         |
+    |                                        | finalization and the   |
+    |                                        | no-precommit, no-      |
+    |                                        | bypass publication     |
+    |                                        | contract               |
+    +----------------------------------------+------------------------+
+    | recipient-service-obeys-inbox-contract | The named recipient    |
+    |                                        | committed its inbox    |
+    |                                        | before acknowledgment  |
+    |                                        | and did not fabricate  |
+    |                                        | possession for another |
+    |                                        | principal              |
+    +----------------------------------------+------------------------+
+
+                  Table 6: Permitted Deployment Predicates
+
+   The schema permits omission of assumptions.  Its array bound is 128,
+   while the permitted predicate set and semantic uniqueness allow at
+   most five accepted entries.  An omitted predicate MUST NOT be
+   silently added.  The bounded full-collection path requires all five;
+   that conservative choice is not a new assumption requirement for
+   every other possible proof path.
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 43]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+A.9.  PG-SealedSnapshot/0.2.0 Authentication Interchange
+
+   This named collection contract uses the carrier in Appendix A.4 with
+   a separate approved collector key.  The embedded payload is exact
+   UTF-8 JSON, not CBOR and not canonicalized JSON.  The signature
+   authenticates the received payload bytes.  The payload and all
+   objects defined below have exactly their listed fields.  Unknown
+   fields, duplicate JSON member names, invalid Unicode and structural
+   bounds violations are errors.
+
+   This profile selects the full-collection evidence path.  After
+   structural manifest validation, the evidence array MUST contain
+   exactly one entry, of kind collection-provenance.  Its artifact
+   reference locates the exact N2-signed collection record defined here.
+   A missing or multiple entry selection yields EVIDENCE_MISSING; a sole
+   structurally recognized but different evidence kind yields
+   NOT_IMPLEMENTED.  In either case the adapter rejects the package and
+   emits no CoverageResult.  Unknown evidence kinds fail structural
+   validation.  No additional evidence family is silently ignored.
+   Other collection paths require a separately identified profile.
+
+   The external trust configuration has exactly six fields.  It is
+   supplied through an approved channel separately from the untrusted
+   package; a package-construction helper's proposed pins are not
+   approval.  All hex strings below are lowercase.
+
+   Approval of the six external pins and the collector authority MUST be
+   valid for this evaluation under the consumer's declared trust policy.
+   Freshness, expiry, revocation and historical-validity decisions are
+   supplied by that policy; this profile specifies no online key
+   discovery or revocation protocol.  Missing, expired or revoked
+   approval leaves authentication unestablished and yields
+   AUTHENTICITY_UNRESOLVED, a rejected adapter report and no
+   CoverageResult.  A policy that expressly accepts historical validity
+   records that scope; reassessment produces a new result rather than
+   rewriting an earlier one.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 44]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+      +==========================+==================================+
+      | Field                    | Value                            |
+      +==========================+==================================+
+      | collector_public_key_hex | 64 hexadecimal digits encoding   |
+      |                          | the approved 32-byte Ed25519 key |
+      +--------------------------+----------------------------------+
+      | collector_kid_hex        | 2 to 128 even-count hexadecimal  |
+      |                          | digits encoding the approved 1   |
+      |                          | to 64 byte key ID                |
+      +--------------------------+----------------------------------+
+      | pinned_policy_sha256     | 64 hexadecimal digits: approved  |
+      |                          | exact issuer and epoch policy    |
+      |                          | digest                           |
+      +--------------------------+----------------------------------+
+      | assumption_policy_sha256 | 64 hexadecimal digits: approved  |
+      |                          | exact assumption-policy artifact |
+      |                          | digest                           |
+      +--------------------------+----------------------------------+
+      | install_sha256           | 64 hexadecimal digits: reviewed  |
+      |                          | database installation procedure  |
+      |                          | digest                           |
+      +--------------------------+----------------------------------+
+      | export_sha256            | 64 hexadecimal digits: reviewed  |
+      |                          | complete collection procedure    |
+      |                          | digest                           |
+      +--------------------------+----------------------------------+
+
+                   Table 7: External Trust Configuration
+
+   Collector approval MUST cover the particular incarnation, epoch,
+   endpoint, procedure and assertion scope.  Possessing a mathematically
+   valid key does not grant that authority.  The policy and assumption-
+   policy pins bind scope; deployment governance establishes the
+   collector's authority over it.  Procedure digests identify the exact
+   approved procedure artifacts; this contract does not require a
+   private source file, programming language or API.  The collector MUST
+   retain its actual query and driver transcript alongside the package.
+   A digest does not prove faithful execution, and signing supplied
+   assertions does not itself observe a database.
+
+   +==========================+=======================================+
+   | Field                    | Structure and binding                 |
+   +==========================+=======================================+
+   | contract                 | Exact string PG-SealedSnapshot/0.2.0  |
+   +--------------------------+---------------------------------------+
+   | collector_id             | String of 1 to 1024 Unicode scalar    |
+   |                          | values                                |
+   +--------------------------+---------------------------------------+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 45]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   | endpoint                 | String of 1 to 1024 Unicode scalar    |
+   |                          | values identifying the approved       |
+   |                          | endpoint                              |
+   +--------------------------+---------------------------------------+
+   | collected_at             | A 20-to-27-character UTC timestamp    |
+   |                          | conforming to Appendix A.10; the      |
+   |                          | entire decoded string is validated    |
+   +--------------------------+---------------------------------------+
+   | install_sha256           | Exact equality to the external        |
+   |                          | installation-procedure pin            |
+   +--------------------------+---------------------------------------+
+   | export_sha256            | Exact equality to the external        |
+   |                          | collection-procedure pin              |
+   +--------------------------+---------------------------------------+
+   | snapshot_sha256          | Exact equality to the manifest        |
+   |                          | snapshot digest                       |
+   +--------------------------+---------------------------------------+
+   | policy_sha256            | Exact equality to the manifest        |
+   |                          | pinned-policy digest                  |
+   +--------------------------+---------------------------------------+
+   | assumption_policy_sha256 | Exact equality to the manifest        |
+   |                          | assumption-policy digest              |
+   +--------------------------+---------------------------------------+
+   | database_incarnation     | Exact equality to the snapshot's      |
+   |                          | canonical incarnation UUID            |
+   +--------------------------+---------------------------------------+
+   | epoch_id                 | Exact equality to the snapshot's      |
+   |                          | canonical epoch UUID                  |
+   +--------------------------+---------------------------------------+
+   | seals                    | Object with exactly action, creation, |
+   |                          | receiver; each a canonical positive   |
+   |                          | decimal xid8 string less than 2^64,   |
+   |                          | equal to its snapshot seal coordinate |
+   +--------------------------+---------------------------------------+
+   | counts                   | Object with exactly actions,          |
+   |                          | finalization_attempts,                |
+   |                          | receiver_attempts; integer values 0   |
+   |                          | to 10000, not booleans, equal to the  |
+   |                          | respective raw array lengths          |
+   +--------------------------+---------------------------------------+
+   | export                   | Object defined in the observation     |
+   |                          | table below                           |
+   +--------------------------+---------------------------------------+
+   | configuration            | Object defined in the observation     |
+   |                          | table below                           |
+   +--------------------------+---------------------------------------+
+   | schema_grants            | Object and audit arrays defined below |
+   +--------------------------+---------------------------------------+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 46]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   | driver                   | Object defined in the observation     |
+   |                          | table below                           |
+   +--------------------------+---------------------------------------+
+
+                   Table 8: Complete Collection Payload
+
+   The next table lists every field of the observation objects and the
+   exact values needed to establish the corresponding checks.  Structure
+   validation and observation evaluation are distinct.  An authenticated
+   object with all required fields but nonmatching observation values
+   does not establish the check; it is not automatically malformed.  In
+   particular this version does not impose an additional structural type
+   restriction on each observation value beyond the matching predicates
+   shown here.
+
+   +===============+===================================================+
+   | Object        | Exact fields and values for support               |
+   +===============+===================================================+
+   | export        | exit_code: integer 0, not boolean;                |
+   |               | transaction_status: COMMIT; isolation:            |
+   |               | repeatable read; read_only: on; row_security:     |
+   |               | off                                               |
+   +---------------+---------------------------------------------------+
+   | configuration | server_version_num: integer 180000 through        |
+   |               | 189999, not boolean; fsync, full_page_writes,     |
+   |               | synchronous_commit: each on; in_recovery:         |
+   |               | boolean false                                     |
+   +---------------+---------------------------------------------------+
+   | driver        | commit_synchronous_commit: on;                    |
+   |               | publication_phase: after-committed-creation-      |
+   |               | seal; published_source: committed-finalization-   |
+   |               | ledger; receiver_ack: after-inbox-commit          |
+   +---------------+---------------------------------------------------+
+
+                     Table 9: Required Observed Values
+
+   schema_grants has exactly five array-valued fields: tables, roles,
+   direct_write_grants, public_function_execute, and
+   public_schema_create.  The first array has at most four rows, each
+   with exactly name, owner, persistence, row_security.  The second has
+   at most six rows, each with exactly name, superuser, createdb,
+   createrole, replication, bypassrls, login.  These exact field sets
+   and array bounds are structural requirements.  This version assigns
+   no entry schema to the three prohibited-grant arrays: support
+   requires all three to be empty.
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 47]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   The supported table observation contains exactly one row for each
+   name epoch, action_ledger, finalization_ledger, and receiver_inbox.
+   Every owner is wexp_pg_owner, persistence is p (logged), and row
+   security is boolean false.  The supported role observation contains
+   exactly wexp_pg_owner, wexp_pg_action, wexp_pg_finalizer,
+   wexp_pg_receiver, wexp_pg_sealer, and wexp_pg_reader; all six
+   capability flags for every role are boolean false.  Row order is
+   irrelevant.  These names are exact audit identifiers in this
+   interchange, not requirements to use a particular supplied
+   installation program.
+
+     +==========================+====================================+
+     | Check                    | Required matching evidence         |
+     +==========================+====================================+
+     | structure, policy        | Closed schemas, semantic row and   |
+     |                          | seal constraints, exact artifact   |
+     |                          | lengths and digests, externally    |
+     |                          | approved policy and scope bindings |
+     +--------------------------+------------------------------------+
+     | capture_authenticity,    | Authenticated collection and exact |
+     | barriers                 | export observations, with matched  |
+     |                          | seal coordinates                   |
+     +--------------------------+------------------------------------+
+     | schema_grants            | Complete matching table and role   |
+     |                          | observations and three empty       |
+     |                          | prohibited-grant arrays            |
+     +--------------------------+------------------------------------+
+     | durability_continuity    | Matching configuration and driver  |
+     |                          | commit-time synchronous-commit     |
+     |                          | observation                        |
+     +--------------------------+------------------------------------+
+     | finalization_publication | Matching driver publication phase  |
+     |                          | and source                         |
+     +--------------------------+------------------------------------+
+     | receiver_possession      | Matching driver acknowledgment     |
+     |                          | discipline                         |
+     +--------------------------+------------------------------------+
+     | receipt_binding          | Every retained finalization and    |
+     |                          | inbox candidate checked against    |
+     |                          | the complete B predicate;          |
+     |                          | unresolved checks retained         |
+     |                          | separately from invalid candidates |
+     +--------------------------+------------------------------------+
+
+         Table 10: Observation to Check Mapping in the Bounded Path
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 48]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   The full-collection path establishes its capture, exact-source,
+   exact-creation-view and exact-receiver-view premises only when every
+   required operational observation matches and all five deployment
+   predicates are approved.  Its composition premise additionally
+   requires no unresolved finalization binding; its receiver-binding
+   premise requires no unresolved inbox binding.  Derived premises
+   retain the capture basis and transitive accepted assumptions.  These
+   observations do not prove administrator honesty, credential
+   exclusivity, absence of hidden publication or storage correctness.  A
+   missing assumption or unestablished observation leaves this path's
+   population claims not-established.
+
+   The support declaration and additional limits of the reference
+   implementation are described separately in Appendix B.1.
+
+   The aggregate receipt_binding check reports not-evaluated if not
+   attempted, unresolved if any retained candidate has unresolved B
+   interpretation, refuted if all candidate interpretations are resolved
+   and at least one is invalid, and supported if every candidate has a
+   valid B binding, including the vacuous empty case.  An invalid
+   candidate remains visible even when another candidate makes the
+   aggregate unresolved.  Identity conflicts are separately retained;
+   this aggregate does not decide creation or delivery outcomes.  This
+   profile uses only the four active check states specified in
+   Appendix A.11 and does not emit the reserved conflicted state.
+   Logical derivation conflicts are handled separately by Coverage
+   aggregation.
+
+A.10.  Timestamp Encoding
+
+   Both collected_at and actual-result evaluation_time MUST use the
+   following restricted UTC form of [RFC3339], expressed in ABNF
+   [RFC5234].  The grammar matches the entire decoded string without
+   leading or trailing whitespace.  DIGIT is imported from [RFC5234],
+   Appendix B.1.
+
+   timestamp = 4DIGIT "-" 2DIGIT "-" 2DIGIT
+               %x54 2DIGIT ":" 2DIGIT ":" 2DIGIT
+               [ "." 1*6DIGIT ] %x5A
+
+
+
+
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 49]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   The four-digit year is 0001 through 9999.  The month and day MUST
+   form a valid Gregorian calendar date, including the leap-year rule.
+   Hours are 00 through 23; minutes and seconds are 00 through 59.  The
+   optional fraction has one through six digits.  Only uppercase T and Z
+   are allowed.  Leap-second notation, offsets other than Z, reduced-
+   precision or week dates, comma fractions and extra suffixes are
+   rejected as INPUT_INVALID.  This deliberately narrower language is
+   part of profile 0.2.0; it is not silently imposed on an artifact from
+   another profile revision.
+
+   Examples are 2026-10-21T09:00:00Z and 2026-10-21T09:00:00.123456Z.
+   Timestamp syntax establishes neither clock accuracy nor an
+   authenticated observation time.  Timestamps do not replace logical
+   seal coordinates or prove commit order.
+
+A.11.  Input, Reports and Semantic Validation
+
+   The five schemas listed here are normative structural contracts using
+   JSON Schema 2020-12 [JSONSCHEMA] [JSONSCHEMA-VALIDATION].  They do
+   not replace the semantic requirements of this appendix.  JSON follows
+   [RFC8259], with valid UTF-8, unique member names, no unpaired
+   surrogates and no nonfinite numbers.  Insignificant whitespace and
+   object member order do not change logical meaning; every artifact
+   digest nevertheless binds exact supplied bytes.  There is no
+   canonical-JSON transformation before hashing.
+
+             +============================+=================+
+             | Artifact                   | Schema          |
+             +============================+=================+
+             | Input manifest             | Appendix A.14.2 |
+             +----------------------------+-----------------+
+             | Snapshot                   | Appendix A.14.1 |
+             +----------------------------+-----------------+
+             | Approved assumption policy | Appendix A.14.3 |
+             +----------------------------+-----------------+
+             | Adapter check report       | Appendix A.14.4 |
+             +----------------------------+-----------------+
+             | Logical Coverage result    | Appendix A.14.5 |
+             +----------------------------+-----------------+
+
+                       Table 11: Normative Schemas
+
+   The manifest supplies profile and version, a request naming
+   coverage/0.2.0 and unique requested claim IDs, detached snapshot and
+   policy references, a detached assumption-policy reference, and
+   evidence references.  Every artifact reference has exactly name,
+   sha256 and octets.  A name is a flat relative artifact name, never a
+   path or network URL; all named artifacts have unique names distinct
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 50]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   from the manifest name.  Every length and SHA-256 digest MUST be
+   verified.  The adapter MUST NOT fetch URLs or execute artifact
+   contents.  Evidence IDs are unique and MUST NOT use the reserved IDs
+   input-snapshot or pinned-policy.  An evidence kind names material to
+   inspect, not a trusted boolean.
+
+   The adapter report has exactly the nine checks in the mapping table
+   above.  Each check records not-evaluated, supported, refuted or
+   unresolved, with evidence references and a reason.  References
+   resolve to manifest evidence IDs or the two reserved artifact IDs.
+   Supported and refuted checks require inspected evidence.  Not-
+   evaluated means unattempted; unresolved means attempted without
+   sufficient basis. adapter_status=evaluated means all checks were
+   attempted, not that all passed.  The report's input_sha256 hashes the
+   exact manifest bytes and MUST be present for an evaluated report;
+   null means those bytes were unavailable or no input was supplied.  An
+   adapter report does not override a logical prerequisite.
+
+   The structural schema retains conflicted as a reserved adapter check
+   state.  A producer of this profile version MUST NOT emit it, and a
+   semantic validator MUST reject an adapter report containing it as an
+   invalid profile report.  Structural acceptance of that reserved value
+   does not make the report semantically valid.  This restriction does
+   not change the logical Coverage aggregation of conflicting
+   derivations.
+
+   The logical result has contract CoverageResult/0.2.0, rule set
+   coverage/0.2.0 and the profile identifiers above.  It supports all
+   ten claim IDs: supplied-correspondence, source-complete, source-
+   sound, source-exact, creation-complete, creation-sound, creation-
+   exact, delivery-complete, delivery-exact and empty-actions.  An
+   evaluated claim has outcome supported, refuted or not-established; an
+   unevaluated claim has a reason, no outcome and no derivations.
+
+   Actual results use artifact_kind=evaluation-result, identify the
+   evaluator and version, and bind the real input manifest, pinned
+   policies, evaluation timestamp and all three seal coordinates.  The
+   timestamp MUST be validated as a date and time, not merely accepted
+   because of a schema format annotation.  Null cutoffs are permitted
+   only for constructed-example, which consumers MUST reject as
+   evaluation evidence.  A missing actual seal yields a collection error
+   rather than an invented bound result.  Declaring a coordinate does
+   not authenticate it.  Appendix A.10 specifies the required timestamp
+   language.
+
+   The serialized context's fixed scope value is durable-commits-to-
+   coverage_pg.action_ledger-in-epoch, its receipt_stream is
+   coverage_pg.finalization_ledger, and its payload_projection is
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 51]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   sha256-of-exact-action-payload-bytes.  These exact wire identifiers
+   designate the ledger semantics defined here and do not require a
+   private SQL or programming-language interface.
+
+   The serialized context object and its enclosing profile,
+   profile_version, evaluator and assumption_policy fields jointly
+   encode the logical context required by Section 3.  The mapping below
+   makes explicit the fields and fixed profile semantics used by the
+   result schema in Appendix A.14.5.  These constants do not admit
+   arbitrary tenant partitions, resource kinds or business-action
+   meanings under the same scope identifier; changing those meanings
+   requires another identified binding or profile revision.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 52]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+    +=====================+==========================================+
+    | Logical context     | Profile representation                   |
+    | item                |                                          |
+    +=====================+==========================================+
+    | Tenant or namespace | context.database_incarnation is the      |
+    |                     | namespace; there is no separate tenant   |
+    |                     | partition.                               |
+    +---------------------+------------------------------------------+
+    | Resource            | The incarnation's                        |
+    |                     | coverage_pg.action_ledger, fixed by      |
+    |                     | context.scope and this profile.          |
+    +---------------------+------------------------------------------+
+    | Action kind         | Admission of an action-ledger row, fixed |
+    |                     | by this profile.                         |
+    +---------------------+------------------------------------------+
+    | Completion          | Durable COMMIT of that admitted row,     |
+    | predicate           | fixed by this profile.                   |
+    +---------------------+------------------------------------------+
+    | Configuration epoch | context.epoch_id and the externally      |
+    |                     | pinned epoch policy.                     |
+    +---------------------+------------------------------------------+
+    | Membership rule     | The committed sealed slice of            |
+    |                     | Appendix A.1, including same-transaction |
+    |                     | admission, with context.action_cutoff.   |
+    +---------------------+------------------------------------------+
+    | Occurrence-identity | profile_version fixes the database-      |
+    | revision            | incarnation, epoch-UUID and action-UUID  |
+    |                     | tuple.                                   |
+    +---------------------+------------------------------------------+
+    | Payload projection  | context.payload_projection.              |
+    +---------------------+------------------------------------------+
+    | Receipt stream      | context.receipt_stream.                  |
+    +---------------------+------------------------------------------+
+    | Intended recipient  | context.recipient_id, also bound by the  |
+    |                     | pinned epoch policy.                     |
+    +---------------------+------------------------------------------+
+    | Policies            | context.pinned_policy and enclosing      |
+    |                     | assumption_policy bind exact artifact    |
+    |                     | digests; the approved assumption policy  |
+    |                     | also identifies its own revision.        |
+    +---------------------+------------------------------------------+
+    | Evaluator revision  | evaluator.id and evaluator.version;      |
+    |                     | rule_set separately identifies the       |
+    |                     | logical-rule revision.                   |
+    +---------------------+------------------------------------------+
+
+           Table 12: Logical Context to Profile Representation
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 53]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   A semantic validator MUST additionally check unique IDs; exact
+   agreement of requested claims and records marked requested; matching
+   context IDs, policy digests and cutoffs; permitted rule and polarity
+   pairs; complete, acyclic dependency graphs; authorized assumptions,
+   transitive basis inheritance and transitive assumption inheritance;
+   resolvable evidence and JSON Pointer references; actual positive
+   counterexample witnesses and required exhaustive-search bases;
+   consistent view availability, integrity, closure, branch coverage and
+   exactness; and the model's aggregation and conflict rules.
+   Structural validity alone makes neither an imported result nor its
+   premises trusted.
+
+   Both usable support and usable refutation produce not-established
+   with a derivation-conflict diagnostic retaining both branches.
+   Downstream claim dependencies require the aggregated claim to be
+   supported; selecting a favorable derivation from a conflicted claim
+   is forbidden.  Family implications operate on derivations before
+   aggregation without creating cyclic outcome dependencies.
+
+   References use evidence:<manifest-id>, input-snapshot#<JSON-Pointer>,
+   premise:<id>, claim:<claim-id>, derivation:<id> or
+   transformation:<id> as applicable.  JSON Pointer follows [RFC6901].
+   Detached-artifact references are bound by their manifest digest.
+   Premise and assumption references use premise IDs, claim dependencies
+   use claim IDs, and diagnostic references use diagnostic IDs.
+   Resolution alone does not confer trust.  Assumptions, premises,
+   diagnostics, transformations and derivations are ordered
+   lexicographically by stable IDs.  Claims preserve requested order
+   followed by dependency claims in claim-ID order.  Retained invalid-
+   member references and normalization transformations MUST preserve
+   access to the raw evidence.
+
+A.12.  Resource and Failure Contract
+
+      +================================+===========================+
+      | Resource                       | Maximum                   |
+      +================================+===========================+
+      | Snapshot UTF-8 JSON            | 256 MiB                   |
+      +--------------------------------+---------------------------+
+      | Raw rows in each population    | 10000                     |
+      +--------------------------------+---------------------------+
+      | One action payload             | 1 MiB                     |
+      +--------------------------------+---------------------------+
+      | One retained final-byte value  | 64 KiB                    |
+      +--------------------------------+---------------------------+
+      | Recipient or issuer identifier | 256 Unicode scalar values |
+      +--------------------------------+---------------------------+
+      | Manifest evidence entries      | 128                       |
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 54]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+      +--------------------------------+---------------------------+
+      | Entire declared package,       | 512 MiB                   |
+      | including manifest             |                           |
+      +--------------------------------+---------------------------+
+      | JSON nesting                   | 16 levels beyond root     |
+      |                                | depth zero                |
+      +--------------------------------+---------------------------+
+      | Adapter diagnostics            | 1000                      |
+      +--------------------------------+---------------------------+
+
+                         Table 13: Profile Bounds
+
+   The schemas impose the remaining per-field, array and result bounds.
+   Receipt and collection carrier limits also apply.  Exceeding a bound
+   MUST yield RESOURCE_LIMIT and no positive result.  Truncating,
+   skipping large records, sampling, discarding counterexamples or
+   manufacturing empty views is forbidden.  If collection fails before
+   producing a complete object, it is COLLECTION_INCOMPLETE.  A larger
+   retained population requires a revised collection or profile
+   contract.
+
+   +=========================+=========================================+
+   | Code                    | Meaning                                 |
+   +=========================+=========================================+
+   | NOT_IMPLEMENTED         | Required check or evidence              |
+   |                         | path not implemented                    |
+   +-------------------------+-----------------------------------------+
+   | INPUT_INVALID           | Malformed input, duplicate              |
+   |                         | JSON keys or semantic range             |
+   |                         | or uniqueness violation                 |
+   +-------------------------+-----------------------------------------+
+   | UNSUPPORTED_VERSION     | Unknown profile or contract             |
+   |                         | version                                 |
+   +-------------------------+-----------------------------------------+
+   | UNKNOWN_FIELD           | Unlisted field in a closed              |
+   |                         | object                                  |
+   +-------------------------+-----------------------------------------+
+   | RESOURCE_LIMIT          | Declared computation or                 |
+   |                         | artifact bound exceeded                 |
+   +-------------------------+-----------------------------------------+
+   | HASH_MISMATCH           | Artifact length or digest               |
+   |                         | mismatch, or collection                 |
+   |                         | digest disagreement                     |
+   +-------------------------+-----------------------------------------+
+   | EVIDENCE_MISSING        | Required evidence absent or             |
+   |                         | unsupported branch selection            |
+   +-------------------------+-----------------------------------------+
+   | AUTHENTICITY_UNRESOLVED | Collection authentication               |
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 55]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   |                         | unavailable or unsuccessful,            |
+   |                         | or approval missing                     |
+   +-------------------------+-----------------------------------------+
+   | POLICY_MISMATCH         | Policy, context or approved             |
+   |                         | procedure pin disagreement              |
+   +-------------------------+-----------------------------------------+
+   | BARRIER_UNESTABLISHED   | Required committed barrier              |
+   |                         | basis absent or inconsistent            |
+   +-------------------------+-----------------------------------------+
+   | COLLECTION_INCOMPLETE   | Incomplete collection,                  |
+   |                         | absent required slice or                |
+   |                         | count disagreement                      |
+   +-------------------------+-----------------------------------------+
+   | CONFIG_DISCONTINUITY    | Unresolved configuration or             |
+   |                         | incarnation discontinuity               |
+   +-------------------------+-----------------------------------------+
+   | RECEIPT_INVALID         | Retained candidate fails the            |
+   |                         | complete B predicate                    |
+   +-------------------------+-----------------------------------------+
+   | IDENTITY_CONFLICT       | Different retained bytes                |
+   |                         | under one receipt identity              |
+   +-------------------------+-----------------------------------------+
+   | BINDING_UNRESOLVED      | Required binding                        |
+   |                         | verification lacks a                    |
+   |                         | sufficient basis                        |
+   +-------------------------+-----------------------------------------+
+
+                  Table 14: Adapter Diagnostic Vocabulary
+
+   Receipt diagnostic locations are JSON Pointers into the complete raw
+   snapshot.  If more than 1000 diagnostics would be needed, evaluation
+   MUST fail with RESOURCE_LIMIT rather than emit an apparently complete
+   truncated report.  Failure does not remove original evidence.  A
+   rejected package MUST NOT yield a positive Coverage result.
+
+   In the bounded collection path, structural, digest, pin or collection
+   authentication failure yields a rejected adapter report and no
+   CoverageResult.  A correctly authenticated observation that does not
+   establish an operational prerequisite instead yields unresolved
+   checks.  A bad receipt signature remains an invalid candidate;
+   unavailable receipt cryptography remains unresolved binding.  The
+   latter blocks unsupported absence inferences but need not block
+   authenticated byte-for-byte delivery comparison.  No evaluator may
+   turn verifier unavailability into a fabricated negative witness.
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 56]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+A.13.  Conformance Cases and Their Preconditions
+
+   The following cases specify observable expectations, not a claim that
+   any deployment has passed them.  Except where a row varies a
+   prerequisite, assume authenticated complete sealed populations, the
+   exact approved context and policies, all five accepted deployment
+   predicates, no identity conflicts and available cryptography.
+   Initially two distinct actions each have one correctly bound final
+   receipt, and both receipts are in the recipient inbox.  For the
+   illustrative consumer decisions, the consumer requires creation-exact
+   and delivery-exact.  Every negative expectation requires its
+   indicated positive membership witness and complete search basis;
+   fixture labels or a hidden test oracle cannot establish those
+   premises.
+
+   Claim and adapter expectations concern the profile.  The accept,
+   reject and hold labels illustrate the consumer in Appendix B.2; they
+   are not additional Coverage outcomes or a requirement to implement
+   that consumer interface.
+
+   +=======================+===========================================+
+   | Case                  | Expected result                           |
+   +=======================+===========================================+
+   | Healthy initial       | Creation exact and delivery exact         |
+   | population            | supported; accept                         |
+   +-----------------------+-------------------------------------------+
+   | Identical retry of    | Raw attempts retained; authenticated      |
+   | one envelope in       | normalization leaves two candidates; both |
+   | both ledgers          | exactness claims supported; accept        |
+   +-----------------------+-------------------------------------------+
+   | Empty action,         | Empty-actions, creation exact and         |
+   | finalization and      | delivery exact supported under            |
+   | inbox slices          | established closure and exactness; accept |
+   +-----------------------+-------------------------------------------+
+   | One action has no     | Creation complete and exact refuted;      |
+   | finalization; every   | creation sound and delivery exact         |
+   | existing              | supported; reject                         |
+   | finalization          |                                           |
+   | delivered             |                                           |
+   +-----------------------+-------------------------------------------+
+   | One committed         | Creation exact supported; delivery        |
+   | finalization          | complete and exact refuted; reject        |
+   | missing from the      |                                           |
+   | complete inbox        |                                           |
+   +-----------------------+-------------------------------------------+
+   | Second valid          | Creation complete and sound supported,    |
+   | receipt UUID for      | creation exact refuted; delivery exact    |
+   | one action, both      | supported; reject                         |
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 57]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   | delivered             |                                           |
+   +-----------------------+-------------------------------------------+
+   | One action's only     | Invalid candidate retained; creation      |
+   | candidate has an      | complete, sound and exact refuted;        |
+   | invalid signature,    | delivery exact supported; reject          |
+   | and its exact bytes   |                                           |
+   | are delivered         |                                           |
+   +-----------------------+-------------------------------------------+
+   | Additional            | Delivery complete supported; delivery     |
+   | authenticated inbox   | exact refuted; reject                     |
+   | candidate, with       |                                           |
+   | every finalized       |                                           |
+   | candidate delivered   |                                           |
+   +-----------------------+-------------------------------------------+
+   | Different byte        | Retain both and report identity conflict; |
+   | variants under one    | do not support exactness by selecting     |
+   | receipt UUID          | one.  Independent counterexamples may     |
+   |                       | refute a claim; conflict alone is not an  |
+   |                       | invented refutation                       |
+   +-----------------------+-------------------------------------------+
+   | Expected              | Consumer hold even if claims under the    |
+   | incarnation, epoch,   | package's different context are supported |
+   | recipient or any      |                                           |
+   | cutoff differs        |                                           |
+   +-----------------------+-------------------------------------------+
+   | Collector signed      | Rejected adapter authentication; no       |
+   | with an unapproved    | CoverageResult; hold                      |
+   | key, or signed        |                                           |
+   | collection bytes      |                                           |
+   | are altered           |                                           |
+   +-----------------------+-------------------------------------------+
+   | Signing policy or     | Policy mismatch; rejected adapter; no     |
+   | assumption policy     | CoverageResult; hold                      |
+   | differs from its      |                                           |
+   | external digest pin   |                                           |
+   +-----------------------+-------------------------------------------+
+   | One deployment        | Bounded full-collection path leaves       |
+   | assumption omitted    | population claims not-established; hold   |
+   | or required           |                                           |
+   | operational           |                                           |
+   | observation           |                                           |
+   | unestablished         |                                           |
+   +-----------------------+-------------------------------------------+
+   | Issuer signature      | Binding unresolved; no fabricated         |
+   | verification          | invalid-signature or missing-binding      |
+   | unavailable after     | counterexample; creation exact not-       |
+   | capture is            | established, while delivery exact may     |
+   | authenticated         | remain supported; hold                    |
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 58]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   +-----------------------+-------------------------------------------+
+   | Incomplete export     | Error or unavailable view, no positive    |
+   | or resource           | result and no fabricated empty            |
+   | exhaustion            | population; hold                          |
+   +-----------------------+-------------------------------------------+
+
+                  Table 15: Population and Decision Cases
+
+   Additional encoding cases exercise the original received bytes:
+   duplicate JSON members; extra closed-object fields; alternate,
+   duplicate or unordered CBOR keys; forbidden algorithm -8; wrong
+   protected key ID; detached payload; extra COSE header or tag;
+   trailing bytes; and all stated size and depth boundaries.  A
+   malformed retained finalization exercises an invalid B edge while
+   remaining in its population; the same defect in the collection
+   authentication record prevents that record from establishing capture.
+   Exact action UUIDs, payload hashes, policy digests, recipient, issuer
+   and outer-to-inner receipt identities MUST each be checked rather
+   than inferred from a valid signature.
+
+   Admission cases include rollback, lost commit response followed by
+   durable recollection, writers blocked behind each seal, whole-
+   transaction retry on serialization failure, rejected post-seal
+   admission and inability of an ordinary sender to admit inbox records.
+   Constructed assertions can test parser and inference behavior but do
+   not observe these database events.  Deployment conformance requires
+   the applicable checks against its actual authenticated endpoints,
+   storage, principal bindings and publication and acknowledgment
+   discipline.  This appendix does not claim power-loss, storage-fault,
+   failover, restore or independently operated interoperability evidence
+   merely from successful process-crash or same-host tests.
+
+A.14.  Complete Profile JSON Schemas
+
+   The following five schemas are normative structural constraints for
+   this profile.  They use JSON Schema Draft 2020-12 [JSONSCHEMA]
+   [JSONSCHEMA-VALIDATION].  Schema validity does not replace the
+   semantic checks specified above.  Schema identifiers are identifiers,
+   not instructions to fetch resources.  Local references resolve within
+   each complete schema.  Listings carrying the RFC 8792 single-
+   backslash header [RFC8792] MUST be unfolded before JSON parsing;
+   folding is document presentation only and never applies to signed or
+   hashed deployment bytes.
+
+A.14.1.  Snapshot Schema
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 59]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   NOTE: '\' line wrapping per RFC 8792
+
+   {
+     "$schema": "https://json-schema.org/draft/2020-12/schema",
+     "$id": "urn:wexp:coverage:pg-ledger:0.2.0:snapshot",
+     "title": "PG Ledger 0.2.0 raw snapshot (structural validity only)"\
+       ,
+     "type": "object",
+     "additionalProperties": false,
+     "required": ["profile", "version", "server_version", "snapshot_coo\
+       rdinate", "epoch", "actions", "finalization_attempts", "receiver\
+       _attempts"],
+     "properties": {
+       "profile": {"const": "wexp-coverage-pg-ledger"},
+       "version": {"const": "0.2.0"},
+       "server_version": {"type": "string", "pattern": "^18(?:[. ]|$)"\
+       , "maxLength": 256},
+       "snapshot_coordinate": {"type": "string", "pattern": "^[0-9]+:[0\
+       -9]+:([0-9]+(,[0-9]+)*)?$", "maxLength": 262144},
+       "epoch": {
+         "type": "object", "additionalProperties": false,
+         "required": ["epoch_id", "database_incarnation", "recipient_id\
+       ", "issuer_id", "issuer_key_id_hex", "issuer_public_key_hex", "p\
+       olicy_digest_hex", "action_seal_xid", "creation_seal_xid", "rece\
+       iver_seal_xid"],
+         "properties": {
+           "epoch_id": {"$ref": "#/$defs/uuid"},
+           "database_incarnation": {"$ref": "#/$defs/uuid"},
+           "recipient_id": {"type": "string", "minLength": 1, "maxLengt\
+       h": 256},
+           "issuer_id": {"type": "string", "minLength": 1, "maxLength"\
+       : 256},
+           "issuer_key_id_hex": {"type": "string", "pattern": "^([0-9a-\
+       f]{2}){1,64}$"},
+           "issuer_public_key_hex": {"$ref": "#/$defs/hex32"},
+           "policy_digest_hex": {"$ref": "#/$defs/hex32"},
+           "action_seal_xid": {"$ref": "#/$defs/decimal"},
+           "creation_seal_xid": {"$ref": "#/$defs/decimal"},
+           "receiver_seal_xid": {"$ref": "#/$defs/decimal"}
+         }
+       },
+       "actions": {
+         "type": "array", "maxItems": 10000,
+         "items": {
+           "type": "object", "additionalProperties": false,
+           "required": ["action_id", "payload_hex"],
+           "properties": {
+             "action_id": {"$ref": "#/$defs/uuid"},
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 60]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+             "payload_hex": {"type": "string", "pattern": "^([0-9a-f]{2\
+       })*$", "maxLength": 2097152}
+           }
+         }
+       },
+       "finalization_attempts": {"type": "array", "maxItems": 10000, "i\
+       tems": {"$ref": "#/$defs/attempt"}},
+       "receiver_attempts": {"type": "array", "maxItems": 10000, "items\
+       ": {"$ref": "#/$defs/attempt"}}
+     },
+     "$defs": {
+       "uuid": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-\
+       [0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
+       "decimal": {"type": "string", "pattern": "^[1-9][0-9]{0,19}$"},
+       "hex32": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+       "attempt": {
+         "type": "object", "additionalProperties": false,
+         "required": ["entry_id", "receipt_key", "final_bytes_hex"],
+         "properties": {
+           "entry_id": {"$ref": "#/$defs/decimal"},
+           "receipt_key": {"$ref": "#/$defs/uuid"},
+           "final_bytes_hex": {"type": "string", "pattern": "^([0-9a-f]\
+       {2})*$", "maxLength": 131072}
+         }
+       }
+     }
+   }
+
+A.14.2.  Evidence Package Manifest Schema
+
+   NOTE: '\' line wrapping per RFC 8792
+
+   {
+     "$schema": "https://json-schema.org/draft/2020-12/schema",
+     "$id": "urn:wexp:coverage:pg-ledger:0.2.0:adapter-input",
+     "title": "Detached evidence package for the PG Ledger adapter",
+     "type": "object", "additionalProperties": false,
+     "required": ["profile", "version", "request", "snapshot", "pinned_\
+       policy", "evidence"],
+     "properties": {
+       "profile": {"const": "wexp-coverage-pg-ledger"},
+       "version": {"const": "0.2.0"},
+       "request": {
+         "type": "object", "additionalProperties": false,
+         "required": ["request_id", "rule_set", "requested_claims", "as\
+       sumption_policy"],
+         "properties": {
+           "request_id": {"type": "string", "pattern": "^[A-Za-z0-9._-]\
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 61]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+       {1,64}$"},
+           "rule_set": {"const": "coverage/0.2.0"},
+           "requested_claims": {"type": "array", "minItems": 1, "maxIte\
+       ms": 10, "uniqueItems": true, "items": {"enum": ["supplied-corre\
+       spondence", "source-complete", "source-sound", "source-exact", "\
+       creation-complete", "creation-sound", "creation-exact", "deliver\
+       y-complete", "delivery-exact", "empty-actions"]}},
+           "assumption_policy": {"$ref": "#/$defs/artifact"}
+         }
+       },
+       "snapshot": {"$ref": "#/$defs/artifact"},
+       "pinned_policy": {"$ref": "#/$defs/artifact"},
+       "evidence": {
+         "type": "array", "maxItems": 128,
+         "items": {
+           "type": "object", "additionalProperties": false,
+           "required": ["id", "kind", "artifact"],
+           "properties": {
+             "id": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}\
+       $"},
+             "kind": {"enum": ["policy-approval", "collection-provenanc\
+       e", "schema-grants-audit", "durability-continuity", "seal-transc\
+       ript", "publication-discipline", "recipient-possession"]},
+             "artifact": {"$ref": "#/$defs/artifact"}
+           }
+         }
+       }
+     },
+     "$defs": {
+       "artifact": {
+         "type": "object", "additionalProperties": false,
+         "required": ["name", "sha256", "octets"],
+         "properties": {
+           "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-\
+       9._-]{0,127}$"},
+           "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+           "octets": {"type": "integer", "minimum": 0, "maximum": 26843\
+       5456}
+         }
+       }
+     }
+   }
+
+A.14.3.  Assumption Policy Schema
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 62]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   NOTE: '\' line wrapping per RFC 8792
+
+   {
+     "$schema": "https://json-schema.org/draft/2020-12/schema",
+     "$id": "urn:wexp:coverage:pg-ledger:0.2.0:assumption-policy",
+     "title": "Explicit assumption acceptance policy (approval authenti\
+       cation is external)",
+     "type": "object", "additionalProperties": false,
+     "required": ["policy_id", "version", "authority", "database_incarn\
+       ation", "epoch_id", "accepted_assumptions"],
+     "properties": {
+       "policy_id": {"type": "string", "minLength": 1, "maxLength": 128\
+       },
+       "version": {"type": "string", "minLength": 1, "maxLength": 64},
+       "authority": {"type": "string", "minLength": 1, "maxLength": 256\
+       },
+       "database_incarnation": {"type": "string", "pattern": "^[0-9a-f]\
+       {8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
+       "epoch_id": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]\
+       {4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
+       "accepted_assumptions": {
+         "type": "array", "maxItems": 128,
+         "items": {
+           "type": "object", "additionalProperties": false,
+           "required": ["id", "predicate", "predicate_version", "reason\
+       ", "limitations"],
+           "properties": {
+             "id": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}\
+       $"},
+             "predicate": {"enum": ["trusted-database-host-administrati\
+       on", "correct-postgresql-storage", "exclusive-principal-capabili\
+       ties", "publisher-obeys-finalization-order", "recipient-service-\
+       obeys-inbox-contract"]},
+             "predicate_version": {"const": "pg-ledger/0.2.0"},
+             "reason": {"type": "string", "minLength": 1, "maxLength": \
+       2048},
+             "limitations": {"type": "array", "maxItems": 128, "items"\
+       : {"type": "string", "maxLength": 2048}}
+           }
+         }
+       }
+     }
+   }
+
+A.14.4.  Adapter Report Schema
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 63]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   NOTE: '\' line wrapping per RFC 8792
+
+   {
+     "$schema": "https://json-schema.org/draft/2020-12/schema",
+     "$id": "urn:wexp:coverage:pg-ledger:0.2.0:adapter-result",
+     "title": "Profile evidence-check report, not a CoverageResult",
+     "type": "object", "additionalProperties": false,
+     "required": ["profile", "version", "adapter_status", "input_sha25\
+       6", "checks", "diagnostics"],
+     "allOf": [{"if": {"properties": {"adapter_status": {"const": "eva\
+       luated"}}}, "then": {"properties": {"input_sha256": {"type": "s\
+       tring", "pattern": "^[0-9a-f]{64}$"}}}}],
+     "properties": {
+       "profile": {"const": "wexp-coverage-pg-ledger"},
+       "version": {"const": "0.2.0"},
+       "adapter_status": {"enum": ["not-evaluated", "rejected", "evalu\
+       ated"]},
+       "input_sha256": {"oneOf": [{"type": "null"}, {"type": "string"\
+       , "pattern": "^[0-9a-f]{64}$"}]},
+       "checks": {
+         "type": "object", "additionalProperties": false,
+         "required": ["structure", "policy", "capture_authenticity", "\
+       schema_grants", "durability_continuity", "barriers", "finalizat\
+       ion_publication", "receiver_possession", "receipt_binding"],
+         "properties": {
+           "structure": {"$ref": "#/$defs/check"},
+           "policy": {"$ref": "#/$defs/check"},
+           "capture_authenticity": {"$ref": "#/$defs/check"},
+           "schema_grants": {"$ref": "#/$defs/check"},
+           "durability_continuity": {"$ref": "#/$defs/check"},
+           "barriers": {"$ref": "#/$defs/check"},
+           "finalization_publication": {"$ref": "#/$defs/check"},
+           "receiver_possession": {"$ref": "#/$defs/check"},
+           "receipt_binding": {"$ref": "#/$defs/check"}
+         }
+       },
+       "diagnostics": {"type": "array", "maxItems": 1000, "items": {"$\
+       ref": "#/$defs/diagnostic"}}
+     },
+     "$defs": {
+       "check": {
+         "type": "object", "additionalProperties": false,
+         "required": ["status", "evidence_refs", "reason"],
+         "properties": {
+           "status": {"description": "conflicted is reserved: profile \
+       0.2.0 producers MUST NOT emit it; semantic validators MUST reje\
+       ct reports containing it.", "enum": ["not-evaluated", "supporte\
+       d", "refuted", "unresolved", "conflicted"]},
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 64]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+           "evidence_refs": {"type": "array", "maxItems": 128, "unique\
+       Items": true, "items": {"type": "string", "pattern": "^[A-Za-z0\
+       -9._-]{1,64}$"}},
+           "reason": {"type": "string", "minLength": 1, "maxLength": 2\
+       048}
+         }
+       },
+       "diagnostic": {
+         "type": "object", "additionalProperties": false,
+         "required": ["code", "location", "detail"],
+         "properties": {
+           "code": {"enum": ["NOT_IMPLEMENTED", "INPUT_INVALID", "UNSU\
+       PPORTED_VERSION", "UNKNOWN_FIELD", "RESOURCE_LIMIT", "HASH_MISM\
+       ATCH", "EVIDENCE_MISSING", "AUTHENTICITY_UNRESOLVED", "POLICY_M\
+       ISMATCH", "BARRIER_UNESTABLISHED", "COLLECTION_INCOMPLETE", "CO\
+       NFIG_DISCONTINUITY", "RECEIPT_INVALID", "IDENTITY_CONFLICT", "B\
+       INDING_UNRESOLVED"]},
+           "location": {"type": "string", "maxLength": 256},
+           "detail": {"type": "string", "minLength": 1, "maxLength": 2\
+       048}
+         }
+       }
+     }
+   }
+
+A.14.5.  Coverage Result Schema
+
+   NOTE: '\' line wrapping per RFC 8792
+
+   {
+     "$schema": "https://json-schema.org/draft/2020-12/schema",
+     "$id": "urn:wexp:coverage:pg-ledger:0.2.0:coverage-result",
+     "title": "PG Ledger profile encoding of the Coverage 0.2.0 logica\
+       l result",
+     "type": "object", "additionalProperties": false,
+     "required": ["artifact_kind", "contract", "rule_set", "profile", "\
+       profile_version", "result_id", "evaluator", "evaluation_time", "\
+       input_manifest", "context", "assumption_policy", "requested_clai\
+       ms", "claims", "premises", "views", "diagnostics", "transformati\
+       ons", "unperformed_checks", "limitations", "supersedes"],
+     "properties": {
+       "artifact_kind": {"enum": ["evaluation-result", "constructed-exa\
+       mple"]},
+       "contract": {"const": "CoverageResult/0.2.0"},
+       "rule_set": {"const": "coverage/0.2.0"},
+       "profile": {"const": "wexp-coverage-pg-ledger"},
+       "profile_version": {"const": "0.2.0"},
+       "result_id": {"$ref": "#/$defs/id"},
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 65]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+       "evaluator": {
+         "type": "object", "additionalProperties": false, "required": [\
+       "id", "version"],
+         "properties": {"id": {"$ref": "#/$defs/id"}, "version": {"type\
+       ": "string", "minLength": 1, "maxLength": 64}}
+       },
+       "evaluation_time": {"oneOf": [{"type": "string", "format": "date\
+       -time", "minLength": 20, "maxLength": 27, "pattern": "^[0-9]{4}-\
+       [0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$"}\
+       , {"type": "null"}]},
+       "input_manifest": {"oneOf": [{"$ref": "#/$defs/artifact"}, {"typ\
+       e": "null"}]},
+       "context": {
+         "type": "object", "additionalProperties": false,
+         "required": ["id", "epoch_id", "database_incarnation", "scope"\
+       , "receipt_stream", "recipient_id", "payload_projection", "pinne\
+       d_policy", "action_cutoff", "creation_cutoff", "receiver_cutoff"\
+       ],
+         "properties": {
+           "id": {"$ref": "#/$defs/id"}, "epoch_id": {"$ref": "#/$defs/\
+       uuid"}, "database_incarnation": {"$ref": "#/$defs/uuid"},
+           "scope": {"const": "durable-commits-to-coverage_pg.action_le\
+       dger-in-epoch"},
+           "receipt_stream": {"const": "coverage_pg.finalization_ledger\
+       "},
+           "recipient_id": {"type": "string", "minLength": 1, "maxLengt\
+       h": 256},
+           "payload_projection": {"const": "sha256-of-exact-action-payl\
+       oad-bytes"},
+           "pinned_policy": {"oneOf": [{"$ref": "#/$defs/artifact"}, {"\
+       type": "null"}]},
+           "action_cutoff": {"$ref": "#/$defs/cutoff"},
+           "creation_cutoff": {"$ref": "#/$defs/cutoff"},
+           "receiver_cutoff": {"$ref": "#/$defs/cutoff"}
+         }
+       },
+       "assumption_policy": {
+         "oneOf": [{"type": "null"}, {
+           "type": "object", "additionalProperties": false, "required"\
+       : ["id", "version", "artifact"],
+           "properties": {"id": {"type": "string", "minLength": 1, "max\
+       Length": 128}, "version": {"type": "string", "minLength": 1, "ma\
+       xLength": 64}, "artifact": {"$ref": "#/$defs/artifact"}}
+         }]
+       },
+       "requested_claims": {"type": "array", "minItems": 1, "maxItems"\
+       : 10, "uniqueItems": true, "items": {"$ref": "#/$defs/claim_id"}\
+       },
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 66]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+       "claims": {"type": "array", "minItems": 1, "maxItems": 10, "item\
+       s": {"$ref": "#/$defs/claim"}},
+       "premises": {"type": "array", "maxItems": 1000, "items": {"$ref"\
+       : "#/$defs/premise"}},
+       "views": {
+         "type": "object", "additionalProperties": false, "required": [\
+       "S", "Cv", "Rv"],
+         "properties": {"S": {"$ref": "#/$defs/view"}, "Cv": {"$ref": "\
+       #/$defs/view"}, "Rv": {"$ref": "#/$defs/view"}}
+       },
+       "diagnostics": {"type": "array", "maxItems": 1000, "items": {"$r\
+       ef": "#/$defs/diagnostic"}},
+       "transformations": {"type": "array", "maxItems": 1000, "items": \
+       {"type": "object", "additionalProperties": false, "required": ["\
+       id", "operation", "input_refs", "output_refs", "basis_refs"], "p\
+       roperties": {"id": {"$ref": "#/$defs/id"}, "operation": {"type"\
+       : "string", "minLength": 1, "maxLength": 2048}, "input_refs": {"\
+       $ref": "#/$defs/refs"}, "output_refs": {"$ref": "#/$defs/refs"}\
+       , "basis_refs": {"$ref": "#/$defs/refs"}}}},
+       "unperformed_checks": {"$ref": "#/$defs/texts"},
+       "limitations": {"$ref": "#/$defs/texts"},
+       "supersedes": {"type": "array", "maxItems": 128, "items": {"$ref\
+       ": "#/$defs/artifact"}}
+     },
+     "allOf": [{"if": {"properties": {"artifact_kind": {"const": "evalu\
+       ation-result"}}}, "then": {"properties": {"evaluation_time": {"t\
+       ype": "string", "format": "date-time", "minLength": 20, "maxLeng\
+       th": 27, "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{\
+       2}:[0-9]{2}(\\.[0-9]{1,6})?Z$"}, "input_manifest": {"$ref": "#/$\
+       defs/artifact"}, "assumption_policy": {"type": "object"}, "conte\
+       xt": {"properties": {"pinned_policy": {"$ref": "#/$defs/artifact\
+       "}, "action_cutoff": {"type": "string"}, "creation_cutoff": {"ty\
+       pe": "string"}, "receiver_cutoff": {"type": "string"}}}}}}],
+     "$defs": {
+       "id": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,128}$"},
+       "uuid": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-\
+       [0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
+       "refs": {"type": "array", "maxItems": 1000, "uniqueItems": true\
+       , "items": {"type": "string", "minLength": 1, "maxLength": 512}}\
+       ,
+       "texts": {"type": "array", "maxItems": 1000, "items": {"type": "\
+       string", "minLength": 1, "maxLength": 2048}},
+       "artifact": {
+         "type": "object", "additionalProperties": false, "required": [\
+       "name", "sha256", "octets"],
+         "properties": {"name": {"type": "string", "pattern": "^[A-Za-z\
+       0-9][A-Za-z0-9._-]{0,127}$"}, "sha256": {"type": "string", "patt\
+       ern": "^[0-9a-f]{64}$"}, "octets": {"type": "integer", "minimum"\
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 67]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+       : 0, "maximum": 268435456}}
+       },
+       "cutoff": {"oneOf": [{"type": "null"}, {"type": "string", "patte\
+       rn": "^[1-9][0-9]{0,19}$"}]},
+       "claim_id": {"enum": ["supplied-correspondence", "source-complet\
+       e", "source-sound", "source-exact", "creation-complete", "creati\
+       on-sound", "creation-exact", "delivery-complete", "delivery-exac\
+       t", "empty-actions"]},
+       "claim": {
+         "type": "object", "additionalProperties": false,
+         "required": ["id", "role", "evaluation_status", "derivations"\
+       , "inherited_assumptions", "diagnostic_refs", "limitations"],
+         "properties": {
+           "id": {"$ref": "#/$defs/claim_id"}, "role": {"enum": ["reque\
+       sted", "dependency"]},
+           "evaluation_status": {"enum": ["evaluated", "not-evaluated"]\
+       },
+           "outcome": {"enum": ["supported", "refuted", "not-establishe\
+       d"]},
+           "reason": {"type": "string", "minLength": 1, "maxLength": 20\
+       48},
+           "derivations": {"type": "array", "maxItems": 1000, "items": \
+       {"$ref": "#/$defs/derivation"}},
+           "inherited_assumptions": {"$ref": "#/$defs/refs"}, "diagnost\
+       ic_refs": {"$ref": "#/$defs/refs"}, "limitations": {"$ref": "#/$\
+       defs/texts"}
+         },
+         "allOf": [{"if": {"properties": {"evaluation_status": {"const"\
+       : "evaluated"}}}, "then": {"required": ["outcome"]}, "else": {"r\
+       equired": ["reason"], "not": {"required": ["outcome"]}, "propert\
+       ies": {"derivations": {"maxItems": 0}}}}]
+       },
+       "premise": {
+         "type": "object", "additionalProperties": false,
+         "required": ["id", "predicate", "predicate_version", "definiti\
+       on", "context_id", "state", "basis_refs", "dependencies", "assum\
+       ption_authority", "limitations"],
+         "properties": {
+           "id": {"$ref": "#/$defs/id"}, "predicate": {"$ref": "#/$defs\
+       /id"}, "predicate_version": {"type": "string", "minLength": 1, "\
+       maxLength": 64},
+           "definition": {"type": "string", "minLength": 1, "maxLength"\
+       : 2048}, "context_id": {"$ref": "#/$defs/id"},
+           "state": {"enum": ["checked", "assumed", "unknown", "refuted\
+       "]}, "basis_refs": {"$ref": "#/$defs/refs"}, "dependencies": {"$\
+       ref": "#/$defs/refs"},
+           "assumption_authority": {"oneOf": [{"type": "null"}, {"type"\
+       : "object", "additionalProperties": false, "required": ["authori\
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 68]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+       ty", "policy_entry_id", "reason"], "properties": {"authority": {\
+       "type": "string", "minLength": 1, "maxLength": 256}, "policy_ent\
+       ry_id": {"$ref": "#/$defs/id"}, "reason": {"type": "string", "mi\
+       nLength": 1, "maxLength": 2048}}}]},
+           "limitations": {"$ref": "#/$defs/texts"}
+         },
+         "allOf": [{"if": {"properties": {"state": {"const": "assumed"}\
+       }}, "then": {"properties": {"assumption_authority": {"type": "ob\
+       ject"}}}, "else": {"properties": {"assumption_authority": {"type\
+       ": "null"}}}}]
+       },
+       "derivation": {
+         "type": "object", "additionalProperties": false,
+         "required": ["id", "rule", "polarity", "basis_refs", "premise_\
+       refs", "claim_dependencies", "witness_refs", "counterexample", "\
+       inherited_assumptions"],
+         "properties": {
+           "id": {"$ref": "#/$defs/id"}, "rule": {"enum": ["P1", "P2a"\
+       , "P2b", "P3", "P4a", "P4b", "P4c", "P5", "P6", "P7", "P8", "N1"\
+       , "N2a", "N2b", "N3", "N4a", "N4b", "N5", "N6", "N7"]},
+           "polarity": {"enum": ["support", "refutation"]}, "basis_refs\
+       ": {"$ref": "#/$defs/refs"}, "premise_refs": {"$ref": "#/$defs/r\
+       efs"},
+           "claim_dependencies": {"type": "array", "maxItems": 10, "uni\
+       queItems": true, "items": {"$ref": "#/$defs/claim_id"}},
+           "witness_refs": {"$ref": "#/$defs/refs"}, "inherited_assumpt\
+       ions": {"$ref": "#/$defs/refs"},
+           "counterexample": {"oneOf": [{"type": "null"}, {"type": "obj\
+       ect", "additionalProperties": false, "required": ["context_id", \
+       "positive_membership_refs", "exhaustive_search", "assumption_ref\
+       s"], "properties": {"context_id": {"$ref": "#/$defs/id"}, "posit\
+       ive_membership_refs": {"$ref": "#/$defs/refs"}, "exhaustive_sear\
+       ch": {"oneOf": [{"type": "null"}, {"type": "object", "additional\
+       Properties": false, "required": ["predicate", "basis_refs"], "pr\
+       operties": {"predicate": {"type": "string", "minLength": 1, "max\
+       Length": 2048}, "basis_refs": {"$ref": "#/$defs/refs"}}}]}, "ass\
+       umption_refs": {"$ref": "#/$defs/refs"}}}]}
+         },
+         "allOf": [{"if": {"properties": {"polarity": {"const": "refuta\
+       tion"}}}, "then": {"properties": {"counterexample": {"type": "ob\
+       ject"}}}, "else": {"properties": {"counterexample": {"type": "nu\
+       ll"}}}}]
+       },
+       "view": {
+         "type": "object", "additionalProperties": false, "required": [\
+       "availability", "enumeration", "integrity", "temporal_closure", \
+       "branch_coverage", "population_exactness", "premise_refs", "reta\
+       ined_invalid_refs", "limitations"],
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 69]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+         "properties": {
+           "availability": {"enum": ["available", "unavailable"]}, "enu\
+       meration": {"enum": ["complete-view", "partial-view", "unavailab\
+       le"]},
+           "integrity": {"enum": ["checked", "unknown", "refuted"]}, "t\
+       emporal_closure": {"enum": ["checked", "assumed", "unknown", "re\
+       futed"]},
+           "branch_coverage": {"enum": ["checked", "assumed", "unknown"\
+       , "refuted"]}, "population_exactness": {"enum": ["checked", "ass\
+       umed", "unknown", "refuted"]},
+           "premise_refs": {"$ref": "#/$defs/refs"}, "retained_invalid_\
+       refs": {"$ref": "#/$defs/refs"}, "limitations": {"$ref": "#/$def\
+       s/texts"}
+         }
+       },
+       "diagnostic": {
+         "type": "object", "additionalProperties": false, "required": [\
+       "id", "code", "claim_refs", "evidence_refs", "detail"],
+         "properties": {
+           "id": {"$ref": "#/$defs/id"}, "code": {"enum": ["missing", "\
+       extra", "duplicate", "identity-conflict", "content-mismatch", "u\
+       nresolved-identity", "invalid-member", "view-unavailable", "prem\
+       ise-gap", "derivation-conflict", "not-implemented", "resource-li\
+       mit"]},
+           "claim_refs": {"type": "array", "maxItems": 10, "uniqueItems\
+       ": true, "items": {"$ref": "#/$defs/claim_id"}}, "evidence_refs"\
+       : {"$ref": "#/$defs/refs"}, "detail": {"type": "string", "minLen\
+       gth": 1, "maxLength": 2048}
+         }
+       }
+     }
+   }
+
+Appendix B.  Reference Implementation (Informative)
+
+   This appendix records implementation experience from the earlier
+   prototype identified in Section 17.  It is not an implementation or
+   conformance claim for the profile specified in Appendix A.  The
+   prototype's single-collection choice predates the current normative
+   selection rule; the current profile also fixes timestamp, assumption-
+   interval, approval and failure behavior that requires separate
+   implementation validation.  The earlier code and frozen trial
+   artifacts retain their original identities.  This informative account
+   adds no requirements.
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 70]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+B.1.  Supported Evidence Path and Implementation Limits
+
+   The bounded reference path accepts exactly one manifest evidence item
+   of kind collection-provenance; it rejects extra or absent branches
+   with EVIDENCE_MISSING rather than ignoring possible conflicts.  The
+   earlier prototype also reports EVIDENCE_MISSING for a sole different
+   recognized evidence kind; the current profile instead specifies
+   NOT_IMPLEMENTED for that case in Appendix A.9.  This historical
+   behavior is not the normative selection contract.  It does not
+   implement alternate evidence families, the P5 receipt-view
+   substitution path, the N5 source-counterexample path or a WEXP Core
+   mapping.  Its support paths are P1, P2a, P2b, P3, P4a, P4b, P4c, P6
+   and P8; its refutation paths are N1, N2a, N2b, N3, N4a, N4b and N6,
+   with P7 and N7 family transport.  It returns all ten claims, marking
+   unrequested claims as dependencies.  Validation of its generated
+   dependency graph does not make it an importer of arbitrary
+   CoverageResult objects.  It reads only flat local regular nonsymlink
+   files and additionally bounds its manifest to 1 MiB.  These are
+   declared limits of that path, not a reduction of the earlier
+   profile's input schema's zero-to-128 evidence entries or seven
+   permitted evidence kinds.
+
+B.2.  Recomputing Consumer Interface
+
+   The reference consumer recomputes evaluation from the evidence
+   package and external pins; it does not accept a supplied result
+   object as authority.  Its caller supplies a nonempty list of unique
+   required claim IDs and an expected context object with exactly these
+   six fields: database_incarnation, epoch_id, recipient_id,
+   action_cutoff, creation_cutoff, receiver_cutoff.  Their values must
+   equal the evaluated context exactly.  This consumer interface is one
+   bounded application of the profile, not a requirement that every
+   Coverage consumer recompute results.
+
+   Invalid required claims or an expected context with a missing or
+   extra field is an INPUT_INVALID interface error.  For a valid
+   request, the consumer returns hold for unavailable evaluation,
+   unestablished authentication or any context-value mismatch before
+   considering claim outcomes.  With matching context, any refuted
+   required claim produces reject; all required claims supported
+   produces accept; otherwise it returns hold.  Its result fields are
+   decision, reason, required_claims, input_sha256,
+   inherited_assumptions, meaning, and evaluation.  They carry the
+   decision and explanation, requested claim list, inspected manifest
+   digest when available, sorted unique inherited assumption IDs, an
+   explanation of the decision's Coverage-only meaning, and an object
+   with adapter and coverage fields.  The latter is null when no
+   CoverageResult was obtained.  Explanation text is not a stable
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 71]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   interoperability identifier.  Acceptance is conditional on that
+   context and those assumptions; it is not a Core accept verdict or
+   production certification.
+
+B.3.  Native Reconciliation Comparison
+
+   A plain set-and-binding reconciliation baseline may share input
+   authentication, candidate normalization and receipt verification with
+   the evaluator.  Agreement then tests the rule and result layer, not
+   independent capture or cryptographic verification, and does not
+   establish superiority of one representation.
+
+Appendix C.  Constructed Encoding Examples (Informative)
+
+   This section is informative.  Its values are public test material and
+   do not identify an actual database, action, receipt, policy approval
+   or Coverage evaluation.
+
+C.1.  Signed Receipt Bytes
+
+   This example uses the Ed25519 seed and public key from [RFC8032],
+   Section 7.1, TEST 1.  The seed is disclosed test material and is
+   unsuitable for an operational signing key.  The key identifier is the
+   one-byte string h'01'.
+
+   seed:
+   9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60
+   public key:
+   d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a
+
+   The epoch, database incarnation, receipt and action UUIDs are,
+   respectively, the following canonical values:
+
+   00000000-0000-0000-0000-000000000001
+   00000000-0000-0000-0000-000000000010
+   00000000-0000-0000-0000-000000000020
+   00000000-0000-0000-0000-000000000030
+
+   The recipient is r, the issuer is i, and the action payload is the
+   empty byte string.  The exact 113-byte policy encoding from
+   Appendix A.2 is:
+
+   a80177776578702d636f7665726167652d70672d6c65646765720265302e322e
+   3003500000000000000000000000000000001004500000000000000000000000
+   0000000001056172066169074101085820d75a980182b10ab7d54bfed3c96407
+   3a0ee172f3daa62325af021a68f707511a
+
+   Its SHA-256 digest is:
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 72]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+   808a5ca10093b0a12b6aafb45606e58f53000c012450adc1e437dd80b8bb8a52
+
+   The receipt payload has the ten fields of Appendix A.5, with those
+   identities, the SHA-256 of the empty action payload in key 7, and the
+   policy digest above in key 9.  The protected header bytes are
+   h'a20132044101'.  The payload is 181 bytes and the complete tagged
+   COSE_Sign1 record is 259 bytes:
+
+   d28446a20132044101a058b5aa0177776578702d636f7665726167652d70672d
+   6c65646765720265302e322e3003500000000000000000000000000000000104
+   5000000000000000000000000000000010055000000000000000000000000000
+   000020065000000000000000000000000000000030075820e3b0c44298fc1c14
+   9afbf4c8996fb92427ae41e4649b934ca495991b7852b855086172095820808a
+   5ca10093b0a12b6aafb45606e58f53000c012450adc1e437dd80b8bb8a520a61
+   695840a9bdacca8a7bfc158af3bfb3e56c498381e03b1a35be6145f84133b828
+   5e3bd2f3892566aca4b4fc31b8fab3cd36fb2c911aa5445ffcb49a73f691c23b
+   b3fe00
+
+   Line breaks and spaces in these hexadecimal listings are display
+   separators; discard them before hexadecimal decoding.  The signature
+   verifies over the exact Sig_structure specified in Appendix A.4.
+   Reproducing these bytes checks encoding and signature handling; it
+   does not establish issuer authority, occurrence of an action,
+   population closure or a Coverage claim.
+
+C.2.  Complete Single-Claim Result Example
+
+   This separate JSON object requests one claim; it does not evaluate
+   the preceding receipt.  It is explicitly a constructed format
+   example: no collection or evaluation has taken place, so the claim is
+   not-evaluated and has no outcome.  Null bindings and cutoffs are
+   permitted for this artifact kind only; a consumer rejects it as
+   evaluation evidence under Appendix A.11.
+
+   {
+     "artifact_kind": "constructed-example",
+     "contract": "CoverageResult/0.2.0",
+     "rule_set": "coverage/0.2.0",
+     "profile": "wexp-coverage-pg-ledger",
+     "profile_version": "0.2.0",
+     "result_id": "example-1",
+     "evaluator": {
+       "id": "example",
+       "version": "0"
+     },
+     "evaluation_time": null,
+     "input_manifest": null,
+     "context": {
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 73]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+       "id": "example-context",
+       "epoch_id": "00000000-0000-0000-0000-000000000001",
+       "database_incarnation": "00000000-0000-0000-0000-000000000010",
+       "scope":
+         "durable-commits-to-coverage_pg.action_ledger-in-epoch",
+       "receipt_stream": "coverage_pg.finalization_ledger",
+       "recipient_id": "r",
+       "payload_projection": "sha256-of-exact-action-payload-bytes",
+       "pinned_policy": null,
+       "action_cutoff": null,
+       "creation_cutoff": null,
+       "receiver_cutoff": null
+     },
+     "assumption_policy": null,
+     "requested_claims": [
+       "creation-exact"
+     ],
+     "claims": [
+       {
+         "id": "creation-exact",
+         "role": "requested",
+         "evaluation_status": "not-evaluated",
+         "reason": "Format example; no collection or evaluation.",
+         "derivations": [],
+         "inherited_assumptions": [],
+         "diagnostic_refs": [],
+         "limitations": []
+       }
+     ],
+     "premises": [],
+     "views": {
+       "S": {
+         "availability": "unavailable",
+         "enumeration": "unavailable",
+         "integrity": "unknown",
+         "temporal_closure": "unknown",
+         "branch_coverage": "unknown",
+         "population_exactness": "unknown",
+         "premise_refs": [],
+         "retained_invalid_refs": [],
+         "limitations": []
+       },
+       "Cv": {
+         "availability": "unavailable",
+         "enumeration": "unavailable",
+         "integrity": "unknown",
+         "temporal_closure": "unknown",
+         "branch_coverage": "unknown",
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 74]
+
+Internet-Draft                WEXP Coverage                 October 2026
+
+
+         "population_exactness": "unknown",
+         "premise_refs": [],
+         "retained_invalid_refs": [],
+         "limitations": []
+       },
+       "Rv": {
+         "availability": "unavailable",
+         "enumeration": "unavailable",
+         "integrity": "unknown",
+         "temporal_closure": "unknown",
+         "branch_coverage": "unknown",
+         "population_exactness": "unknown",
+         "premise_refs": [],
+         "retained_invalid_refs": [],
+         "limitations": []
+       }
+     },
+     "diagnostics": [],
+     "transformations": [],
+     "unperformed_checks": [
+       "Deployment collection and Coverage evaluation."
+     ],
+     "limitations": [
+       "Constructed example; not evaluation evidence."
+     ],
+     "supersedes": []
+   }
+
+Author's Address
+
+   Mikhail Sergeev (editor)
+   Independent Researcher
+   Email: mikhailsergeev369@gmail.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sergeev                   Expires 26 April 2027                [Page 75]
