@@ -41,11 +41,13 @@ It never writes over the selected XML/TXT/HTML. idnits 3.3.0 runs offline in
 submission and normal modes; original diagnostics are retained in the report.
 The manifest records package versions, not a complete OS or binary-image lock.
 
-CI has read-only repository permissions and no submission operation. Checks
+Ordinary PR/push CI has read-only repository permissions and no submission operation. Checks
 do not establish independent interoperability, deployment conformance or IETF
 posting. See the document's Implementation and Validation Status section for
 its implementation limits.
 
-Use [the publication procedure](PUBLICATION-PROCESS.md) for submission and
-official-file readback. [The license map](LICENSE-MAP.md) distinguishes
+Use [the GitHub release submission procedure](publication/GITHUB-SUBMISSION.md)
+for an explicit release-triggered submission of the existing XML, author
+confirmation and official-file readback. A submission prerelease does not
+establish IETF posting. See also [the publication policy](PUBLICATION-PROCESS.md). [The license map](LICENSE-MAP.md) distinguishes
 document notices, repository tooling and third-party components.

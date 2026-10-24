@@ -1,0 +1,56 @@
+name: Submit Coverage -00 to IETF
+
+# Publishing the exact revision's release is the explicit submission trigger.
+# Ordinary pushes and PRs cannot submit. The selected XML is never rebuilt.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  actions: read
+  checks: read
+
+concurrency:
+  group: ietf-submit-coverage-00-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    name: submit-coverage-00
+    if: github.repository == 'WEXP-dev/wexp-coverage-spec' && github.event.release.tag_name == 'draft-sergeev-wexp-coverage-00'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the exact release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Check release, current main, successful CI and earlier attempts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/github_release_submit.py preflight --config publication/submission/coverage-00.json --output build/ietf-submission
+      - name: Retain attempt before submission
+        id: reserve
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: draft-sergeev-wexp-coverage-00-attempt-${{ github.run_id }}
+          path: build/ietf-submission/attempt.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Submit the exact existing XML once
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WEXP_DATATRACKER_SUBMIT: PUBLISH
+          ATTEMPT_ARTIFACT_ID: ${{ steps.reserve.outputs.artifact-id }}
+          ATTEMPT_ARTIFACT_DIGEST: ${{ steps.reserve.outputs.artifact-digest }}
+        run: python3 scripts/github_release_submit.py submit --config publication/submission/coverage-00.json --attempt build/ietf-submission/attempt.json --output build/ietf-submission
+      - name: Retain the observed outcome
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: draft-sergeev-wexp-coverage-00-outcome-${{ github.run_id }}
+          path: build/ietf-submission/
+          if-no-files-found: warn
+          retention-days: 90

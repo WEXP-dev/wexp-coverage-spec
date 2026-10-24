@@ -31,6 +31,8 @@ jobs:
           npm ci --prefix tools/node --ignore-scripts --no-audit --no-fund
       - name: Verify fixed artifacts and reproduce review renderings
         run: python scripts/check_draft.py --render --idnits tools/node/node_modules/.bin/idnits --output-dir build/qa
+      - name: Test the release transport without network submission
+        run: python -m unittest discover -s tests -p 'test_*.py'
       - name: Retain original check results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
