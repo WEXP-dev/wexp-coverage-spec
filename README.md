@@ -1,6 +1,8 @@
 # WEXP Coverage
 
-**Prepared for submission; posting has not yet been verified.**
+**Published individual Internet-Draft: [Coverage -00](https://datatracker.ietf.org/doc/draft-sergeev-wexp-coverage/00/).**
+
+Official XML and TXT were verified byte-for-byte against the selected files on 25 October 2026. See [the posting verification](publication/records/coverage-00-ietf-posting.json).
 
 This repository contains the selected source and review renderings of
 `draft-sergeev-wexp-coverage-00`, *WEXP Coverage: Claims, Evidence, and Evaluation*.
@@ -15,13 +17,12 @@ the draft expires on 26 April 2027.
 Coverage specifies evaluation and reporting of bounded claims about action
 records, delivery, source coverage and supplied-record correspondence. Its
 claim outcomes are distinct from WEXP Core verdicts and application decisions.
-The planned submission is coordinated with `draft-sergeev-wexp-core-02`;
-neither document's bibliography is evidence that the other has been posted.
+The companion [Core -02](https://datatracker.ietf.org/doc/draft-sergeev-wexp-core/02/) is also published. Both remain individual Internet-Drafts; posting is not working-group adoption or standardization.
 
 The XML is the manuscript source. TXT and HTML are fixed review renderings.
 The three selected files are preserved exactly; a changed manuscript requires
 a new reviewed package and manifest. The IETF archive becomes authoritative
-for an officially posted revision. No official archive snapshot is claimed here.
+for an officially posted revision. The separate posting record records the observed official XML/TXT hashes. The preparation manifest and submission release tag remain historical records of the exact package submitted.
 
 ## Local checks
 
