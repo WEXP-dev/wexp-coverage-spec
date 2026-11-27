@@ -1,12 +1,11 @@
 # WEXP Coverage
 
-**Published individual Internet-Draft: [Coverage -00](https://datatracker.ietf.org/doc/draft-sergeev-wexp-coverage/00/).**
+**Published individual Internet-Draft: [Coverage -01](https://datatracker.ietf.org/doc/draft-sergeev-wexp-coverage/01/).**
 
-Official XML and TXT were verified byte-for-byte against the selected files on 25 October 2026. See [the posting verification](publication/records/coverage-00-ietf-posting.json).
+Official XML and TXT were verified byte-for-byte against the selected files on 27 November 2026. See [the posting verification](publication/records/coverage-01-ietf-posting.json).
 
-**Revision -01 is prepared here and is not posted.** Its document date is
-27 November 2026 and it would expire on 31 May 2027. Until the IETF archive
-shows it, -00 is the current revision. Appendix D of -01 lists what changed:
+Revision -01 is the current revision. Its document date is 27 November 2026
+and it expires on 31 May 2027. Appendix D of -01 lists what changed from -00:
 the rule set, profile, result contract and collection contract identifiers
 move from 0.2.0 to 0.3.0 because conforming results can differ.
 
@@ -16,7 +15,8 @@ move from 0.2.0 to 0.3.0 because conforming results can differ.
 - [Exact artifact manifest, -01](manifests/coverage-01.json)
 
 This repository also contains the selected source and review renderings of
-`draft-sergeev-wexp-coverage-00`, *WEXP Coverage: Claims, Evidence, and Evaluation*.
+the earlier revision, [`draft-sergeev-wexp-coverage-00`](https://datatracker.ietf.org/doc/draft-sergeev-wexp-coverage/00/)
+([posting verification](publication/records/coverage-00-ietf-posting.json)), *WEXP Coverage: Claims, Evidence, and Evaluation*.
 Its intended status is Experimental. The document date is 23 October 2026;
 the draft expires on 26 April 2027.
 

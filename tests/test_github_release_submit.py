@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+import urllib.error
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -175,6 +176,41 @@ class GitHubReleaseSubmissionTests(unittest.TestCase):
         self.api.values["/actions/artifacts/555"]["digest"] = "sha256:" + "e" * 64
         with self.assertRaisesRegex(ValueError, "Retained attempt"):
             self.send()
+
+    def not_yet_listed(self, misses):
+        real, calls = self.api.get, []
+
+        def get(suffix):
+            if suffix == "/actions/artifacts/555":
+                calls.append(suffix)
+                if len(calls) <= misses:
+                    raise urllib.error.HTTPError("https://api.github.com" + suffix, 404, "Not Found", None, None)
+            return real(suffix)
+        self.api.get = get
+        return calls
+
+    def test_artifact_not_yet_listed_is_read_again_before_the_single_post(self):
+        self.reserve()
+        calls, waits = self.not_yet_listed(2), []
+        response = release.transport.SubmissionResponse(201, {"id": 123, "name": "draft-sergeev-wexp-coverage",
+            "rev": "00", "status_url": "https://datatracker.ietf.org/api/submission/123/status"})
+        with mock.patch.object(release.transport, "submit_request", return_value=response) as sender, mock.patch("builtins.print"):
+            code = release.submit(self.config_path, self.root / "out/attempt.json", self.root / "out",
+                                  self.env, self.root, self.api,
+                                  status_getter=lambda url: {"id": "123", "state": "auth", "state_desc": "Awaiting"},
+                                  status_sleeper=lambda seconds: None, artifact_sleeper=waits.append)
+        self.assertEqual((code, len(calls), waits, sender.call_count), (0, 3, [5, 5], 1))
+
+    def test_artifact_never_listed_blocks_post_after_bounded_reads(self):
+        self.reserve()
+        calls, waits = self.not_yet_listed(99), []
+        with mock.patch.object(release.transport, "submit_request") as sender:
+            with self.assertRaises(urllib.error.HTTPError):
+                release.submit(self.config_path, self.root / "out/attempt.json", self.root / "out",
+                               self.env, self.root, self.api, artifact_sleeper=waits.append)
+            sender.assert_not_called()
+        self.assertEqual((len(calls), len(waits)), (6, 5))
+        self.assertFalse((self.root / "out/result.json").exists())
 
     def test_changed_xml_after_reservation_blocks_post(self):
         self.reserve()
