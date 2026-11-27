@@ -4,7 +4,18 @@
 
 Official XML and TXT were verified byte-for-byte against the selected files on 25 October 2026. See [the posting verification](publication/records/coverage-00-ietf-posting.json).
 
-This repository contains the selected source and review renderings of
+**Revision -01 is prepared here and is not posted.** Its document date is
+27 November 2026 and it would expire on 31 May 2027. Until the IETF archive
+shows it, -00 is the current revision. Appendix D of -01 lists what changed:
+the rule set, profile, result contract and collection contract identifiers
+move from 0.2.0 to 0.3.0 because conforming results can differ.
+
+- [Standalone RFCXML source, -01](drafts/coverage/01/draft-sergeev-wexp-coverage-01.xml)
+- [Text rendering, -01](drafts/coverage/01/draft-sergeev-wexp-coverage-01.txt)
+- [HTML rendering, -01](drafts/coverage/01/draft-sergeev-wexp-coverage-01.html)
+- [Exact artifact manifest, -01](manifests/coverage-01.json)
+
+This repository also contains the selected source and review renderings of
 `draft-sergeev-wexp-coverage-00`, *WEXP Coverage: Claims, Evidence, and Evaluation*.
 Its intended status is Experimental. The document date is 23 October 2026;
 the draft expires on 26 April 2027.
@@ -35,7 +46,7 @@ python scripts/check_draft.py
 python scripts/check_draft.py --render --idnits tools/node/node_modules/.bin/idnits --output-dir build/qa
 ```
 
-The checker verifies the three hashes and byte counts, document metadata,
+For every selected revision the checker verifies the three hashes and byte counts, document metadata,
 internal references and text width. Rendering uses xml2rfc 3.34.1 offline in a
 temporary directory and compares its outputs to the selected renderings.
 It never writes over the selected XML/TXT/HTML. idnits 3.3.0 runs offline in

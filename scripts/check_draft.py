@@ -18,9 +18,9 @@ import tempfile
 from lxml import etree, html
 
 ROOT = Path(__file__).resolve().parents[1]
-STEM = "draft-sergeev-wexp-coverage-00"
-PAYLOAD = Path("drafts/coverage/00")
-MANIFEST = Path("manifests/coverage-00.json")
+NAME = "draft-sergeev-wexp-coverage"
+# Every selected revision is checked; an earlier revision stays frozen when a later one is added.
+REVISIONS = ("00", "01")
 
 
 def require(condition, message):
@@ -33,7 +33,13 @@ def identity(path):
     return {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
 
 
-def check_artifacts(root):
+def selection(revision):
+    return (NAME + "-" + revision, Path("drafts/coverage") / revision,
+            Path("manifests") / ("coverage-" + revision + ".json"))
+
+
+def check_artifacts(root, revision):
+    STEM, PAYLOAD, MANIFEST = selection(revision)
     manifest = json.loads((root / MANIFEST).read_text())
     require(manifest["format"] == "wexp-coverage-artifact-manifest/1", "Manifest format")
     require(manifest["document"] == STEM, "Document identity")
@@ -60,8 +66,12 @@ def check_artifacts(root):
     require(doc.get("submissionType") == "IETF" and doc.get("ipr") == "trust200902", "Document notices")
     require(not doc.findall('.//{http://www.w3.org/2001/XInclude}include'), "Standalone XML required")
     date = doc.find("./front/date")
-    require(date is not None and dict(date.attrib) == {"year": "2026", "month": "October", "day": "23"},
+    declared_date = datetime.strptime(manifest["document_date"], "%Y-%m-%d")
+    require(date is not None and dict(date.attrib) == {"year": str(declared_date.year),
+                                                       "month": declared_date.strftime("%B"),
+                                                       "day": str(declared_date.day)},
             "Document date")
+    require(manifest["build"]["render_date"] == manifest["document_date"], "Render date")
     require(doc.findtext("./front/title") == manifest["title"], "Document title")
     anchors = [n.get("anchor") for n in doc.iter() if n.get("anchor")]
     require(len(anchors) == len(set(anchors)), "Duplicate XML anchors")
@@ -102,6 +112,42 @@ def run(argv, report):
     return result.stdout
 
 
+def check_revision(revision, args, top):
+    STEM, PAYLOAD, _ = selection(revision)
+    report = top["revisions"].setdefault(revision, {})
+    manifest, report["integrity"] = check_artifacts(ROOT, revision)
+    if args.render or args.idnits:
+        report["environment"] = check_environment(ROOT, manifest)
+    if args.render:
+        with tempfile.TemporaryDirectory(prefix="coverage-render-") as temporary:
+            for kind, suffix in (("text", ".txt"), ("html", ".html")):
+                target = Path(temporary) / (STEM + suffix)
+                run([sys.executable, "-m", "xml2rfc.run", str(ROOT / manifest["canonical_source"]),
+                     "--" + kind, "--no-network", "--date", manifest["build"]["render_date"],
+                     "--out", str(target)], top)
+                rendered_identity = identity(target)
+                report.setdefault("renderings", []).append({"name": target.name, **rendered_identity})
+                require(rendered_identity == manifest["files"][str(PAYLOAD / target.name)],
+                        "Re-render differs from selected artifact: " + target.name)
+        report["rendered_files_match"] = 2
+    if args.idnits:
+        executable = str(args.idnits.resolve())
+        version = run([executable, "--version"], top).strip()
+        require(version == manifest["build"]["idnits"], "Selected idnits version required")
+        node_version = run(["node", "--version"], top).strip().removeprefix("v")
+        require(node_version == manifest["build"]["node"], "Selected Node version required")
+        report["idnits"] = []
+        for suffix in (".xml", ".txt"):
+            for mode in ("submission", "normal"):
+                output = run([executable, "--offline", "--mode", mode, "--output", "json",
+                              "--fail-on", "errors", str(ROOT / PAYLOAD / (STEM + suffix))], top)
+                result = json.loads(output)
+                require(result["nitsBySeverity"]["error"] == 0, "idnits errors")
+                report["idnits"].append({"format": suffix[1:], "mode": mode,
+                                         "counts": result["nitsBySeverity"]})
+    check_artifacts(ROOT, revision)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--render", action="store_true", help="Render into a temporary directory and compare")
@@ -112,40 +158,14 @@ def main():
         output = args.output_dir.resolve()
         selected = (ROOT / "drafts").resolve()
         require(output != selected and selected not in output.parents, "Reports must stay outside drafts/")
-    report = {"document": STEM, "started_utc": datetime.now(timezone.utc).isoformat(),
-              "commands": [], "submission_performed": False}
+    report = {"documents": [NAME + "-" + revision for revision in REVISIONS],
+              "started_utc": datetime.now(timezone.utc).isoformat(),
+              "commands": [], "submission_performed": False, "revisions": {}}
     try:
-        manifest, report["integrity"] = check_artifacts(ROOT)
-        if args.render or args.idnits:
-            report["environment"] = check_environment(ROOT, manifest)
-        if args.render:
-            with tempfile.TemporaryDirectory(prefix="coverage-render-") as temporary:
-                for kind, suffix in (("text", ".txt"), ("html", ".html")):
-                    target = Path(temporary) / (STEM + suffix)
-                    run([sys.executable, "-m", "xml2rfc.run", str(ROOT / manifest["canonical_source"]),
-                         "--" + kind, "--no-network", "--date", manifest["build"]["render_date"],
-                         "--out", str(target)], report)
-                    rendered_identity = identity(target)
-                    report.setdefault("renderings", []).append({"name": target.name, **rendered_identity})
-                    require(rendered_identity == manifest["files"][str(PAYLOAD / target.name)],
-                            "Re-render differs from selected artifact: " + target.name)
-            report["rendered_files_match"] = 2
-        if args.idnits:
-            executable = str(args.idnits.resolve())
-            version = run([executable, "--version"], report).strip()
-            require(version == manifest["build"]["idnits"], "Selected idnits version required")
-            node_version = run(["node", "--version"], report).strip().removeprefix("v")
-            require(node_version == manifest["build"]["node"], "Selected Node version required")
-            report["idnits"] = []
-            for suffix in (".xml", ".txt"):
-                for mode in ("submission", "normal"):
-                    output = run([executable, "--offline", "--mode", mode, "--output", "json",
-                                  "--fail-on", "errors", str(ROOT / PAYLOAD / (STEM + suffix))], report)
-                    result = json.loads(output)
-                    require(result["nitsBySeverity"]["error"] == 0, "idnits errors")
-                    report["idnits"].append({"format": suffix[1:], "mode": mode,
-                                             "counts": result["nitsBySeverity"]})
-        check_artifacts(ROOT)
+        require({p.name for p in (ROOT / "drafts/coverage").iterdir()} == set(REVISIONS),
+                "Unexpected revision directory")
+        for revision in REVISIONS:
+            check_revision(revision, args, report)
         report["status"] = "PASS_BOUNDED_DOCUMENT_CHECKS"
     except Exception as error:
         report["status"] = "FAIL"
