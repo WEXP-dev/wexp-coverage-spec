@@ -1,7 +1,8 @@
 # Submission and official snapshots
 
-The selected manuscript and its review renderings are identified by
-`manifests/coverage-00.json`. Repository checks verify those declared bytes;
+Each selected revision's manuscript and review renderings are identified by
+its own manifest, `manifests/coverage-NN.json`. A later revision is added
+beside an earlier one; the earlier files are not changed. Repository checks verify those declared bytes;
 they do not themselves submit a draft or establish posting.
 
 1. Review the exact source, metadata, references, notices, manifest and check
@@ -25,8 +26,8 @@ Manual upload through [Datatracker](https://datatracker.ietf.org/submit/) remain
 an alternative for the same saved XML, but must not run in parallel with an
 unresolved API attempt.
 
-Coverage -00 and Core -02 are a coordinated pair with separate submission IDs.
-Prior posting of Core -02 is not a prerequisite. Record each actual event rather
+Coverage -00 and Core -02 were a coordinated pair with separate submission IDs.
+Prior posting of Core -02 was not a prerequisite. Coverage -01 is submitted alone. Record each actual event rather
 than inferring one document's outcome from the other.
 
 Only the revision-specific `release: published` workflow can submit. It uses the

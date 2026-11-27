@@ -49,7 +49,7 @@ class GitHubReleaseSubmissionTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
-        original = next((ROOT / "publication/submission").glob("*.json"))
+        original = ROOT / "publication/submission/coverage-00.json"
         self.config = json.loads(original.read_text())
         self.config_path = self.root / "config.json"
         self.config_path.write_bytes(original.read_bytes())
@@ -244,6 +244,23 @@ class GitHubReleaseSubmissionTests(unittest.TestCase):
         self.assertIn("types: [published]", text)
         self.assertIn("cancel-in-progress: false", text)
         self.assertNotIn("contents: write", text)
+
+    def test_every_revision_configuration_selects_its_own_files_and_workflow(self):
+        configs = sorted((ROOT / "publication/submission").glob("coverage-*.json"))
+        self.assertGreaterEqual(len(configs), 2)
+        for path in configs:
+            config = json.loads(path.read_text())
+            revision = path.stem.rsplit("-", 1)[1]
+            self.assertEqual(config["identity"], "draft-sergeev-wexp-coverage-" + revision)
+            self.assertEqual(config["workflow_file"], "ietf-submit-coverage-" + revision + ".yml")
+            self.assertEqual(config["job_name"], "submit-coverage-" + revision)
+            manifest = json.loads((ROOT / config["manifest"]["path"]).read_text())
+            release.validate_files(config, ROOT, date.fromisoformat(manifest["document_date"]))
+            text = (ROOT / ".github/workflows" / config["workflow_file"]).read_text()
+            self.assertIn("github.event.release.tag_name == '" + config["identity"] + "'", text)
+            self.assertIn("name: " + config["job_name"], text)
+            self.assertIn("--config publication/submission/" + path.name, text)
+            self.assertNotIn("  push:", text)
 
 
 if __name__ == "__main__":

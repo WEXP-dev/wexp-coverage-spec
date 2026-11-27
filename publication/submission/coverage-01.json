@@ -1,0 +1,22 @@
+{
+  "schema": "wexp-github-submission-v1",
+  "repository": "WEXP-dev/wexp-coverage-spec",
+  "repository_id": 1431754080,
+  "identity": "draft-sergeev-wexp-coverage-01",
+  "submitter": "mikhailsergeev369@gmail.com",
+  "workflow_file": "ietf-submit-coverage-01.yml",
+  "job_name": "submit-coverage-01",
+  "required_checks": [
+    "check"
+  ],
+  "xml": {
+    "path": "drafts/coverage/01/draft-sergeev-wexp-coverage-01.xml",
+    "bytes": 194600,
+    "sha256": "87552d667851bad109737585ecbaa9b4c0ee640bd95af48c5ed6ddf180ee309c"
+  },
+  "manifest": {
+    "path": "manifests/coverage-01.json",
+    "bytes": 1623,
+    "sha256": "ae0fc671f58c3a9d4839a08eb607d0d55a0601ed6be6e6c93f29f277d0718080"
+  }
+}

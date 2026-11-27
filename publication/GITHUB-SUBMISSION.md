@@ -1,4 +1,9 @@
-# Submit draft-sergeev-wexp-coverage-00 through GitHub
+# Submit a Coverage revision through GitHub
+
+Each revision has its own configuration, workflow and tag. The sequence below
+is written for -00, which is posted. For -01 read `coverage-01.json`,
+`Submit Coverage -01 to IETF` and the tag `draft-sergeev-wexp-coverage-01`
+in the same places. A workflow accepts only its own revision's tag.
 
 This repository uses the IETF's documented submission API from a GitHub
 release workflow. The [IETF author resources](https://authors.ietf.org/collaborative-editing)
@@ -34,7 +39,7 @@ It is not an IETF-maintained GitHub Action or a claim of IETF approval.
    Update the release status and evidence; do not move its tag or overwrite the
    approved XML. A submission tag identifies source selection, not posting.
 
-This draft and `draft-sergeev-wexp-core-02` are one coordinated submission pair, with separate
+Coverage -00 and `draft-sergeev-wexp-core-02` were one coordinated submission pair, with separate
 GitHub runs and separate Datatracker submission IDs. There is no atomic two-draft
 API transaction. Record any partial outcome honestly and do not resubmit the
 successful half of the pair.
