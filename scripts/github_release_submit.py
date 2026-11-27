@@ -17,6 +17,7 @@ import re
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 from urllib.parse import urlsplit
 import xml.etree.ElementTree as ET
@@ -266,8 +267,23 @@ def observe_status(response_body, getter=read_status, sleeper=time.sleep):
             "meaning": "API state is observed separately from official XML/TXT byte verification."}
 
 
+def read_retained_artifact(api, artifact_id, sleeper=time.sleep, reads=6, delay=5):
+    """Read the reservation record back; GitHub can list a new artifact a moment after its upload.
+
+    Only this read-only GET is repeated, and only on 404. Nothing has been sent to
+    Datatracker at this point, and the single POST that follows is never repeated.
+    """
+    for number in range(1, reads + 1):
+        try:
+            return api.get("/actions/artifacts/" + artifact_id)
+        except urllib.error.HTTPError as error:
+            if error.code != 404 or number == reads:
+                raise
+        sleeper(delay)
+
+
 def submit(config_path, attempt_path, output, env=None, root=Path("."), api=None,
-           status_getter=read_status, status_sleeper=time.sleep):
+           status_getter=read_status, status_sleeper=time.sleep, artifact_sleeper=time.sleep):
     env = dict(os.environ if env is None else env)
     raw_config = Path(config_path).read_bytes()
     config = json.loads(raw_config)
@@ -283,7 +299,7 @@ def submit(config_path, attempt_path, output, env=None, root=Path("."), api=None
     require(re.fullmatch(r"[0-9]+", artifact_id) and re.fullmatch(r"[0-9a-f]{64}", artifact_digest),
             "The workflow has not retained the pre-submission attempt artifact")
     api = api or GitHub(config["repository"], env["GH_TOKEN"])
-    retained = api.get("/actions/artifacts/" + artifact_id)
+    retained = read_retained_artifact(api, artifact_id, artifact_sleeper)
     require(retained.get("workflow_run", {}).get("id") == attempt["run_id"] and
             retained.get("workflow_run", {}).get("head_sha") == env["GITHUB_SHA"] and
             retained.get("name") == f"{config['identity']}-attempt-{attempt['run_id']}" and

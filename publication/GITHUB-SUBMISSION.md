@@ -1,9 +1,14 @@
 # Submit a Coverage revision through GitHub
 
 Each revision has its own configuration, workflow and tag. The sequence below
-is written for -00, which is posted. For -01 read `coverage-01.json`,
-`Submit Coverage -01 to IETF` and the tag `draft-sergeev-wexp-coverage-01`
-in the same places. A workflow accepts only its own revision's tag.
+is written for -00, which was posted this way. A workflow accepts only its
+own revision's tag.
+
+Revision -01 was posted by manual upload of the same XML. Its release
+workflow stopped before any request to Datatracker: GitHub had not yet listed
+the attempt record that the workflow had just retained. That read is now
+repeated a bounded number of times; the request to Datatracker is still made
+once. See [the -01 posting record](records/coverage-01-ietf-posting.json).
 
 This repository uses the IETF's documented submission API from a GitHub
 release workflow. The [IETF author resources](https://authors.ietf.org/collaborative-editing)
